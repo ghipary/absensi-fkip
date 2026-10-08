@@ -25,6 +25,12 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | Dosen lain (7) | `siti.nurhaliza@wahidiyah.ac.id`, `budi.hartono@…`, dst. |
 | Mahasiswa (40) | `mahasiswa1@wahidiyah.ac.id` … `mahasiswa40@wahidiyah.ac.id` |
 
+> **Basis data saat ini sudah direset ke mode minimal**: hanya 1 kaprodi,
+> 1 dosen, dan 1 mahasiswa (`kaprodi@`, `muhammad.fauzi@`, `mahasiswa1@`) —
+> kurikulum (mata kuliah), daftar semester, dan kalender tetap. Reset dilakukan
+> oleh `npx tsx scripts/reset-minimal.ts` (menghapus seluruh data transaksi).
+> Jalankan **`npm run db:seed`** untuk memulihkan data demo penuh di atas.
+
 ## Peta route
 
 ### Halaman
@@ -50,7 +56,7 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | `/kaprodi/validasi` | kaprodi | ✅ setujui/tolak perubahan nilai (tolak = rollback snapshot) |
 | `/kaprodi/kehadiran` | kaprodi | ✅ monitoring kehadiran semua kelas + mahasiswa berisiko <75% |
 | `/kaprodi/dosen` | kaprodi | ✅ monitoring dosen, beban kelas, status akun |
-| `/kaprodi/laporan` | kaprodi | ✅ 3 grafik + rekap per kelas + ekspor CSV |
+| `/kaprodi/laporan` | kaprodi | ✅ 3 grafik + rekap per kelas + **ekspor Excel (.xlsx) & PDF** (tabel rapi: header berwarna, border, banding, header beku, autofilter, pewarnaan <75%/grade) |
 | `/kaprodi/manajemen` | kaprodi | ✅ kelola **mata kuliah & kelas (buat/assign/edit)**, **akun dosen/kaprodi & mahasiswa (tambah/edit/hapus)**, **validasi KRS**, semester aktif |
 | `/kaprodi/pengumuman` | kaprodi | ✅ kelola pengumuman seluruh prodi/per kelas |
 | `/kaprodi/profil` | kaprodi | ✅ profil kaprodi |
@@ -73,6 +79,7 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | `/api/nilai` | POST | dosen, kaprodi |
 | `/api/nilai/undo` · `/api/riwayat/terbaru` | POST | dosen, kaprodi |
 | `/api/validasi` | POST | kaprodi |
+| `/api/laporan/export` | GET | kaprodi (`?format=xlsx\|pdf`) |
 | `/api/pengumuman` | GET / POST | baca semua peran; tulis dosen/kaprodi |
 | `/api/pengumuman/[id]` | DELETE | dosen (milik sendiri), kaprodi |
 | `/api/manajemen/mk` | POST | kaprodi (tambah mata kuliah) |
@@ -138,5 +145,8 @@ Design system **Academic Precision**: token di `src/app/globals.css`, dipetakan 
 ```powershell
 npm run build
 npm start               # terminal 1
-npx tsx scripts/e2e.ts  # terminal 2 — 107 assertions (semua rute + alur absensi/tugas/nilai/pengumuman/manajemen akun+kelas/KRS/surat izin/kalender)
+npx tsx scripts/e2e.ts  # terminal 2 — 122 assertions (semua rute + alur absensi/tugas/nilai/pengumuman/manajemen akun+kelas/KRS/surat izin/kalender + ekspor Excel/PDF)
 ```
+
+> e2e dirancang untuk **data demo penuh**. Setelah reset minimal, jalankan
+> `npm run db:seed` dulu, baru `npx tsx scripts/e2e.ts`.

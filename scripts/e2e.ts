@@ -12,6 +12,7 @@ import { prisma } from "../src/lib/prisma";
 import { muatRincianKehadiran } from "../src/lib/kehadiran";
 import { unlink } from "node:fs/promises";
 import { join } from "node:path";
+import ExcelJS from "exceljs";
 
 const BASE = process.env.E2E_URL ?? "http://localhost:3000";
 
@@ -1246,6 +1247,84 @@ async function main() {
       );
     }
   }
+
+  console.log("\n── Ekspor laporan akademik (Excel & PDF) ──");
+
+  const eksporTanpaAuth = await fetch(`${BASE}/api/laporan/export?format=xlsx`);
+  cek("Ekspor tanpa login → 401", eksporTanpaAuth.status === 401, `status ${eksporTanpaAuth.status}`);
+
+  const eksporMhs = await fetch(`${BASE}/api/laporan/export?format=xlsx`, {
+    headers: { Cookie: mhs.cookie },
+  });
+  cek("Ekspor oleh mahasiswa → 403", eksporMhs.status === 403, `status ${eksporMhs.status}`);
+
+  const resXlsx = await fetch(`${BASE}/api/laporan/export?format=xlsx`, {
+    headers: { Cookie: kp.cookie },
+  });
+  const bufXlsx = Buffer.from(await resXlsx.arrayBuffer());
+  cek("Ekspor Excel → 200", resXlsx.status === 200, `status ${resXlsx.status}`);
+  cek(
+    "Excel bertipe spreadsheetml",
+    (resXlsx.headers.get("content-type") ?? "").includes("spreadsheetml")
+  );
+  cek(
+    "Excel adalah arsip XLSX valid (tanda PK)",
+    bufXlsx.length > 2000 && bufXlsx[0] === 0x50 && bufXlsx[1] === 0x4b,
+    `ukuran ${bufXlsx.length} byte`
+  );
+  cek(
+    "Nama berkas Excel berekstensi .xlsx",
+    (resXlsx.headers.get("content-disposition") ?? "").includes(".xlsx")
+  );
+
+  // Baca ulang berkas: pastikan benar-benar bertabel rapi, bukan CSV datar.
+  try {
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(bufXlsx as unknown as Parameters<typeof wb.xlsx.load>[0]);
+    const wsRekap = wb.getWorksheet("Rekap Kelas");
+    const wsDetail = wb.getWorksheet("Detail Mahasiswa");
+    cek("Excel memuat sheet 'Rekap Kelas' & 'Detail Mahasiswa'", !!wsRekap && !!wsDetail);
+
+    const selHeader = wsRekap?.getRow(4).getCell(1);
+    const pola = selHeader?.fill as { type?: string; fgColor?: { argb?: string } } | undefined;
+    cek(
+      "Header tabel Excel berwarna & tebal",
+      selHeader?.font?.bold === true && pola?.type === "pattern" && !!pola.fgColor?.argb
+    );
+    cek("Tabel Excel memiliki autofilter", !!wsRekap?.autoFilter);
+    const tampilan = (wsRekap?.views?.[0] ?? {}) as { ySplit?: number; state?: string };
+    cek(
+      "Header tabel dibekukan (freeze pane)",
+      tampilan.state === "frozen" && tampilan.ySplit === 4,
+      JSON.stringify(tampilan)
+    );
+  } catch (e) {
+    cek("Excel dapat dibaca kembali", false, (e as Error).message);
+  }
+
+  const resPdf = await fetch(`${BASE}/api/laporan/export?format=pdf`, {
+    headers: { Cookie: kp.cookie },
+  });
+  const bufPdf = Buffer.from(await resPdf.arrayBuffer());
+  cek("Ekspor PDF → 200", resPdf.status === 200, `status ${resPdf.status}`);
+  cek(
+    "PDF bertipe application/pdf",
+    (resPdf.headers.get("content-type") ?? "").includes("application/pdf")
+  );
+  cek(
+    "PDF memiliki header %PDF",
+    bufPdf.subarray(0, 4).toString("latin1") === "%PDF",
+    bufPdf.subarray(0, 4).toString("latin1")
+  );
+  cek(
+    "Nama berkas PDF berekstensi .pdf",
+    (resPdf.headers.get("content-disposition") ?? "").includes(".pdf")
+  );
+
+  const formatSalah = await fetch(`${BASE}/api/laporan/export?format=docx`, {
+    headers: { Cookie: kp.cookie },
+  });
+  cek("Format ekspor tak didukung → 400", formatSalah.status === 400, `status ${formatSalah.status}`);
 
   console.log("\n── Data seed ──");
   const mhsCount = await prisma.mahasiswa.count({ where: { status: "aktif" } });

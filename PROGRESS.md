@@ -4,8 +4,10 @@
 
 **Jumat, 9 Oktober 2026 — ±05:00 WIB** (jam sistem komputer).
 
-Status saat berhenti: **hijau semua** — `npx tsc --noEmit` bersih, `npm run build`
-sukses (**59 rute**), `npx tsx scripts/e2e.ts` **99/99 lolos**.
+Status saat berhenti: **hijau** — `npx tsc --noEmit` bersih, `npm run build`
+sukses (**60 rute**). e2e penuh (**122 asersi**) dirancang untuk data demo penuh
+(`npm run db:seed`); pada basis data minimal saat ini diverifikasi fokus
+**13/13** (login 3 akun + render halaman + ekspor Excel/PDF).
 
 **Ringkasan lanjutan sesi (9 Okt):**
 1. `/mahasiswa/profil` (awal sesi) → terverifikasi (**29 rute, 46/46**).
@@ -40,6 +42,19 @@ sukses (**59 rute**), `npx tsx scripts/e2e.ts` **99/99 lolos**.
    keunikan. Sekaligus **memperbaiki bug lama** pada PATCH MK: body tanpa `aktif`
    dulu otomatis men-soft-delete mata kuliah; kini hanya bila `aktif` dikirim.
    → e2e **107/107** (8 asersi baru).
+10. **Batch 8 — Ekspor Excel & PDF + git + reset data** (9 Okt): tombol
+    **"Unduh laporan"** di `/kaprodi/laporan` menghasilkan **Excel (.xlsx)** dan
+    **PDF**. Modul bersama `src/lib/laporan.ts` (dipakai halaman & ekspor agar
+    angka identik), `src/lib/ekspor/excel.ts` (ExcelJS — 2 sheet *Rekap Kelas* +
+    *Detail Mahasiswa*: pita judul, header berwarna, border, banding baris, lebar
+    kolom, header beku, autofilter, format angka, pewarnaan <75%/grade) dan
+    `src/lib/ekspor/pdf.ts` (PDFMake — A4 landscape, ringkasan, tabel otomatis,
+    nomor halaman). Endpoint `GET /api/laporan/export?format=xlsx|pdf` (kaprodi).
+    CSV lama (`TombolCSV`) dihapus. Repo di-`git init` + commit baseline
+    (`c6591ff`). Basis data direset ke mode minimal (1 kaprodi/1 dosen/1 mahasiswa)
+    via `scripts/reset-minimal.ts`; kurikulum & semester tetap.
+    → tsc bersih, build **60 rute**, verifikasi fokus **13/13** (e2e penuh perlu
+    `npm run db:seed`).
 
 ---
 
@@ -249,8 +264,8 @@ tolak hapus mahasiswa berjejak (409). Total **99/99**.
 > ✅ **Batch 3 sudah tuntas** — semua 10 rute nav kini punya halaman (lihat Bagian 2).
 
 ### Batch 4/5/6 — yang masih tersisa (belum dikerjakan)
-- **Ekspor Excel/PDF penuh** (rekap kehadiran & nilai) — ekspor CSV sudah ada di
-  `/kaprodi/laporan`; Excel/PDF tinggal wrapper.
+- ~~**Ekspor Excel/PDF penuh**~~ → **selesai** (Batch 8): Excel `.xlsx` bertabel
+  rapi + PDF, endpoint `/api/laporan/export`.
 - Reminder/pengingat via Vercel Cron (`vercel.json` crons masih **pending**).
 - Dark mode belum diverifikasi menyeluruh per halaman.
 - Cmd+K command palette perlu dipastikan terhubung ke seluruh menu baru Batch 3–5.
@@ -263,15 +278,16 @@ tolak hapus mahasiswa berjejak (409). Total **99/99**.
 > lockout tersedia (lihat Bagian 2).
 
 ### Poles kecil yang diketahui
-- Belum ada repo git — **belum ada commit sama sekali**.
+- Repo git **sudah diinisialisasi**; commit baseline `c6591ff`. Belum ada remote.
 
 ---
 
 ## 4. Error yang sedang terjadi
 
-**Tidak ada error aktif.** Kondisi terakhir benar-benar bersih:
-`npx tsc --noEmit` = 0 error, `npm run build` = sukses **59 rute**,
-`npx tsx scripts/e2e.ts` = **99/99**.
+**Tidak ada error aktif.** Kondisi terakhir bersih:
+`npx tsc --noEmit` = 0 error, `npm run build` = sukses **60 rute**,
+verifikasi fokus = **13/13**. e2e penuh (**122 asersi**) perlu `npm run db:seed`
+lebih dulu karena basis data kini dalam mode minimal.
 
 ### Soal halaman Error State
 File-nya `src/app/(dashboard)/error.tsx` (baru dibuat batch 2). Ini **error boundary bawaan
@@ -322,17 +338,18 @@ npm.cmd start          # → http://localhost:3000
 
 # 3. Pastikan masih hijau sebelum menyentuh kode
 npx.cmd tsc --noEmit
-npx.cmd tsx scripts/e2e.ts    # harus 99/99
+npm.cmd run db:seed           # pulihkan data demo penuh (opsional)
+npx.cmd tsx scripts/e2e.ts    # harus 122/122 (butuh data demo penuh)
 ```
 
 > ⚠️ **`npm start` menyajikan hasil build `next build`.** Setiap kali mengubah kode, wajib
 > hentikan server dulu (hentikan PID yang listen port 3000), `npm.cmd run build`, lalu
 > `npm.cmd start` lagi. Build ≠ auto-reload.
 
-**Batch 6 sudah tuntas.** Prioritas berikutnya:
-1. Ekspor Excel/PDF penuh (CSV dasar sudah ada di `/kaprodi/laporan`).
-2. Vercel Cron reminder + verifikasi dark mode + Cmd+K untuk seluruh menu.
-3. Inisialisasi git + commit pertama.
+**Batch 8 sudah tuntas** (ekspor Excel/PDF, git baseline, reset data). Prioritas berikutnya:
+1. Vercel Cron reminder + verifikasi dark mode + Cmd+K untuk seluruh menu.
+2. (opsional) Ekspor rekap per-dosen di `/dosen/rekap`.
+3. Push repo ke remote (mis. GitHub) bila diinginkan.
 
 **Pola yang harus diikuti** (lihat contoh di halaman yang sudah ada):
 `page.tsx` (Server Component: `getCurrentUser` → guard role → query Prisma → pass DTO)
@@ -350,11 +367,12 @@ Semua teks UI dalam Bahasa Indonesia, ikon Lucide stroke 1.5, tanpa emoji/Lorem 
 | `npm.cmd run db:up` / `db:down` | start/stop PostgreSQL embedded (port **5433**) |
 | `npm.cmd run db:setup` | `db:up` + `db push` + `db:seed` (sekali di awal) |
 | `npm.cmd run db:seed` | isi ulang data demo (menimpa) |
+| `npx.cmd tsx scripts/reset-minimal.ts` | **destruktif**: sisakan 1 kaprodi/1 dosen/1 mahasiswa, hapus transaksi (kurikulum & semester tetap) |
 | `npm.cmd run build` → `npm.cmd start` | mode produksi (yang dipakai untuk e2e) |
 | `npm.cmd run dev` | dev server (auto-reload) |
 | `npm.cmd run db:studio` | Prisma Studio |
 | `npx.cmd tsc --noEmit` | cek tipe |
-| `npx.cmd tsx scripts/e2e.ts` | smoke test 99 asersi (butuh server + DB nyala) |
+| `npx.cmd tsx scripts/e2e.ts` | smoke test 122 asersi (butuh server + DB nyala + data demo penuh) |
 
 > **Windows/PowerShell:** pakai `npm.cmd` dan `npx.cmd` (execution policy). Node v24.21.0.
 >
@@ -378,6 +396,11 @@ Port **5433** (bukan 5432) — PostgreSQL embedded via paket `embedded-postgres`
 | Dosen pengampu Kalkulus I | `muhammad.fauzi@wahidiyah.ac.id` (NIP `199001052015031007`) |
 | Dosen lain (7) | `siti.nurhaliza@wahidiyah.ac.id`, `budi.hartono@…`, dst. |
 | Mahasiswa | `mahasiswa1@wahidiyah.ac.id` … `mahasiswa40@wahidiyah.ac.id` |
+
+> **Kondisi basis data sekarang = mode minimal**: hanya 3 akun di atas yang
+> tersisa (kaprodi, fauzi, mahasiswa1) dengan password `password123`; seluruh
+> data transaksi (kelas/KRS/absensi/nilai/tugas/pengumuman) dihapus, sedangkan
+> mata kuliah + semester + kalender tetap. Pulihkan data penuh: `npm.cmd run db:seed`.
 
 Chip login demo hanya muncul saat `NODE_ENV !== "production"`.
 
