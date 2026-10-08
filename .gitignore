@@ -1,10 +1,43 @@
+# Dependensi
 node_modules/
+
+# Build Next.js
 .next/
 out/
+dist/
+
+# Database lokal (embedded PostgreSQL) — JANGAN di-commit
 data/
-*.log
+
+# Environment / rahasia — JANGAN di-commit (pakai .env.example)
 .env
+.env.*
+!.env.example
+
+# Prisma engine lokal
 .prisma/
-.DS_Store
+
+# Log
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.pid
+
+# TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+.idea/
+.vscode/
+
+# Vercel / Turborepo
+.vercel/
+.turbo/
+
+# Test / coverage
+coverage/
