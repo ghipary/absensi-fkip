@@ -1,0 +1,18 @@
+# Normalisasi akhir baris: simpan LF di repo, biarkan Git menyesuaikan saat checkout.
+* text=auto eol=lf
+
+# Berkas biner — jangan diubah
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+
+# Lockfile tidak perlu ditampilkan di diff
+package-lock.json -diff linguist-generated

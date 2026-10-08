@@ -1,0 +1,237 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   DESIGN TOKENS — "Academic Precision"
+   Netral: stone (abu hangat). Aksen tunggal: deep emerald.
+   Semua pasangan teks sudah diverifikasi WCAG AA.
+   ============================================================ */
+
+@layer base {
+  :root {
+    /* Base */
+    --bg: #fafaf9; /* stone-50 */
+    --surface: #ffffff;
+    --surface-muted: #f5f5f4; /* stone-100 — area konten dalam */
+    --border: #e7e5e4; /* stone-200 */
+    --border-strong: #d6d3d1; /* stone-300 */
+
+    /* Teks */
+    --fg: #1c1917; /* stone-900 · 15,8:1 */
+    --fg-muted: #57534e; /* stone-600 · 7,4:1 */
+    --fg-subtle: #6b6560; /* 5,4:1 — teks tersier tetap nyaman dibaca */
+
+    /* Aksen tunggal */
+    --accent: #047857; /* emerald-700 · 5,55:1 di putih */
+    --accent-hover: #065f46;
+    --accent-active: #064e3b;
+    --accent-fg: #ffffff;
+    --accent-subtle: #ecfdf5; /* emerald-50 */
+    --accent-subtle-hover: #d1fae5;
+    --accent-border: #a7f3d0;
+
+    /* Semantic — varian teks & bg selalu lolos AA */
+    --success: #16a34a;
+    --success-text: #15803d;
+    --success-bg: #f0fdf4;
+    --success-border: #bbf7d0;
+
+    --warning: #d97706;
+    --warning-text: #b45309;
+    --warning-bg: #fffbeb;
+    --warning-border: #fde68a;
+
+    --danger: #dc2626;
+    --danger-text: #dc2626; /* 4,8:1 di putih */
+    --danger-bg: #fef2f2;
+    --danger-border: #fecaca;
+
+    --info: #0891b2;
+    --info-text: #0e7490;
+    --info-bg: #ecfeff;
+    --info-border: #a5f3fc;
+
+    /* Tabel */
+    --zebra: #fcfcfb;
+
+    /* Overlay & elevasi */
+    --overlay: rgb(28 25 23 / 0.45);
+    --shadow-popover: 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.05);
+
+    /* Radius */
+    --radius-input: 10px;
+    --radius-card: 16px;
+    --radius-pill: 999px;
+
+    /* Elevasi kartu (lembut & modern) */
+    --shadow-card: 0 1px 2px rgb(28 25 23 / 0.04), 0 2px 8px rgb(28 25 23 / 0.04);
+    --shadow-card-hover: 0 6px 22px rgb(28 25 23 / 0.1), 0 2px 6px rgb(28 25 23 / 0.06);
+  }
+
+  .dark {
+    --bg: #0a0a0a;
+    --surface: #141413;
+    --surface-muted: #1c1917;
+    --border: #292524; /* stone-800 */
+    --border-strong: #44403c; /* stone-700 */
+
+    --fg: #fafaf9;
+    --fg-muted: #d6d3d1; /* stone-300 · 11:1 */
+    --fg-subtle: #a8a29e; /* stone-400 · 6,5:1 pada latar gelap */
+
+    --accent: #10b981; /* emerald-500 · 7,7:1 di #0A0A0A */
+    --accent-hover: #34d399;
+    --accent-active: #6ee7b7;
+    --accent-fg: #052e22;
+    --accent-subtle: rgb(16 185 129 / 0.12);
+    --accent-subtle-hover: rgb(16 185 129 / 0.2);
+    --accent-border: rgb(16 185 129 / 0.35);
+
+    --success: #16a34a;
+    --success-text: #4ade80;
+    --success-bg: rgb(34 197 94 / 0.1);
+    --success-border: rgb(34 197 94 / 0.3);
+
+    --warning: #d97706;
+    --warning-text: #fbbf24;
+    --warning-bg: rgb(245 158 11 / 0.1);
+    --warning-border: rgb(245 158 11 / 0.3);
+
+    --danger: #dc2626;
+    --danger-text: #f87171;
+    --danger-bg: rgb(239 68 68 / 0.1);
+    --danger-border: rgb(239 68 68 / 0.3);
+
+    --info: #0891b2;
+    --info-text: #22d3ee;
+    --info-bg: rgb(6 182 212 / 0.1);
+    --info-border: rgb(6 182 212 / 0.3);
+
+    --zebra: #171716;
+
+    --overlay: rgb(0 0 0 / 0.65);
+    --shadow-popover: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 16px rgb(0 0 0 / 0.4);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.5), 0 2px 10px rgb(0 0 0 / 0.35);
+    --shadow-card-hover: 0 8px 26px rgb(0 0 0 / 0.55), 0 2px 8px rgb(0 0 0 / 0.4);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-bg text-fg antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04";
+    text-rendering: optimizeLegibility;
+    /* Latar bernuansa akademik: gradasi lembut + pola titik halus (kertas grafik). */
+    background-image:
+      radial-gradient(60rem 60rem at 112% -12%, rgb(4 120 87 / 0.06), transparent 60%),
+      radial-gradient(52rem 52rem at -12% -4%, rgb(8 145 178 / 0.045), transparent 55%),
+      radial-gradient(rgb(28 25 23 / 0.05) 1px, transparent 1.2px);
+    background-size: 100% 100%, 100% 100%, 24px 24px;
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    background-image:
+      radial-gradient(60rem 60rem at 112% -12%, rgb(16 185 129 / 0.08), transparent 60%),
+      radial-gradient(52rem 52rem at -12% -4%, rgb(34 211 238 / 0.05), transparent 55%),
+      radial-gradient(rgb(250 250 249 / 0.045) 1px, transparent 1.2px);
+    background-size: 100% 100%, 100% 100%, 24px 24px;
+  }
+
+  /* Fokus keyboard selalu terlihat — WCAG 2.4.7 */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent ring-offset-2 ring-offset-bg;
+  }
+
+  ::selection {
+    @apply bg-accent-subtle text-fg;
+  }
+}
+
+@layer components {
+  /*Scrollbar tipis — bukan blok abu generik */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--fg-subtle);
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  .font-mono-nums {
+    font-family: var(--font-mono), ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Latar gradasi merek — dipakai pada elemen hero, tombol utama, & aksen.
+     Stop warna dipilih agar teks putih tetap lolos kontras AA.
+     Ukuran 200% memungkinkan animasi gradient-pan yang halus. */
+  .bg-brand-gradient {
+    background-image: linear-gradient(135deg, #047857 0%, #0f766e 52%, #0e7490 100%);
+    background-size: 200% 200%;
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  /* Animasi masuk bertahap untuk baris kartu statistik (anak pakai animate-rise). */
+  .stagger-rise > * {
+    animation-delay: 40ms;
+  }
+  .stagger-rise > *:nth-child(1) {
+    animation-delay: 40ms;
+  }
+  .stagger-rise > *:nth-child(2) {
+    animation-delay: 90ms;
+  }
+  .stagger-rise > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .stagger-rise > *:nth-child(4) {
+    animation-delay: 190ms;
+  }
+  .stagger-rise > *:nth-child(n + 5) {
+    animation-delay: 240ms;
+  }
+}
+
+/* Hormati preferensi pengguna yang sensitif terhadap gerakan */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
