@@ -5,6 +5,7 @@ import { format, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getCurrentUser, ambilNama } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { statistikKehadiran } from "@/lib/grade";
 import { StatCard } from "@/components/shared/page-header";
 import { DashboardHero } from "@/components/shared/dashboard-hero";
@@ -34,7 +35,7 @@ export default async function DashboardDosen() {
   const dosen = await prisma.dosen.findUnique({ where: { userId: user.userId } });
   if (!dosen) redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({ where: { isAktif: true } });
+  const semesterAktif = await cacheSemesterAktif();
 
   // Kelas yang diampu semester ini
   const kelas = semesterAktif
@@ -86,24 +87,37 @@ export default async function DashboardDosen() {
     where: { kelasId: { in: kelasIds }, status: "diambil" },
   });
 
-  // ── Kehadiran rata-rata kelas (untuk 1 pertemuan terakhir) ─────
-  const rekapKelas = await Promise.all(
-    kelas.map(async (k) => {
-      const total = k.pertemuan.length;
-      const hadir = total
-        ? await prisma.absensi.count({
-            where: { status: "hadir", pertemuan: { kelasId: k.id } },
-          })
-        : 0;
-      const perPertemuan = k.krs.length * Math.max(total, 1);
-      return {
-        kelas: k,
-        persen: perPertemuan === 0 ? 0 : Math.round((hadir / perPertemuan) * 1000) / 10,
-        jumlahMhs: k.krs.length,
-        total,
-      };
-    })
-  );
+  // ── Kehadiran rata-rata kelas ──────────────────────────────────
+  // Satu query groupBy untuk semua kelas (dulu 1 count per kelas = N+1).
+  const hadirPerKelas = new Map<string, number>();
+  if (kelasIds.length) {
+    const petaPertemuan = new Map<string, string>();
+    for (const k of kelas) {
+      for (const p of k.pertemuan) petaPertemuan.set(p.id, k.id);
+    }
+    const barisHadir = await prisma.absensi.groupBy({
+      by: ["pertemuanId"],
+      where: { status: "hadir", pertemuan: { kelasId: { in: kelasIds } } },
+      _count: { _all: true },
+    });
+    for (const b of barisHadir) {
+      const kelasId = petaPertemuan.get(b.pertemuanId);
+      if (!kelasId) continue;
+      hadirPerKelas.set(kelasId, (hadirPerKelas.get(kelasId) ?? 0) + b._count._all);
+    }
+  }
+
+  const rekapKelas = kelas.map((k) => {
+    const total = k.pertemuan.length;
+    const hadir = hadirPerKelas.get(k.id) ?? 0;
+    const perPertemuan = k.krs.length * Math.max(total, 1);
+    return {
+      kelas: k,
+      persen: perPertemuan === 0 ? 0 : Math.round((hadir / perPertemuan) * 1000) / 10,
+      jumlahMhs: k.krs.length,
+      total,
+    };
+  });
 
   const nama = await ambilNama({ id: user.userId, role: user.role });
 

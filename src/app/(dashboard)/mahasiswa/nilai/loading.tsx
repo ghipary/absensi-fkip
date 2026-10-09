@@ -1,6 +1,5 @@
 import { PageSkeleton } from "@/components/ui/page-skeleton";
 
-/** Skeleton universal untuk semua halaman di bawah (dashboard). */
 export default function Loading() {
-  return <PageSkeleton />;
+  return <PageSkeleton kartu={4} baris={7} kolom={6} />;
 }

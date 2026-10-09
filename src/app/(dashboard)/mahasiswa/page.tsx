@@ -5,6 +5,7 @@ import { format, isSameDay } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getCurrentUser, ambilNama } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { statistikKehadiran, hitungIpk } from "@/lib/grade";
 import { StatCard } from "@/components/shared/page-header";
 import { DashboardHero } from "@/components/shared/dashboard-hero";
@@ -43,10 +44,7 @@ export default async function DashboardMahasiswa() {
   });
   if (!mahasiswa) redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: true },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   // ── Kehadiran per kelas semester aktif ─────────────────────────
   const kelasDiambil = semesterAktif
@@ -65,24 +63,41 @@ export default async function DashboardMahasiswa() {
       })
     : [];
 
-  const daftarKehadiran = await Promise.all(
-    kelasDiambil.map(async (k) => {
-      const total = k.kelas.pertemuan.length;
-      const hadir = await prisma.absensi.count({
-        where: {
-          mahasiswaId: mahasiswa.id,
-          status: "hadir",
-          pertemuan: { kelasId: k.kelas.id },
-        },
-      });
-      return {
-        kelas: k.kelas,
-        stat: statistikKehadiran(total, hadir),
-        hadir,
-        total,
-      };
-    })
-  );
+  const kelasIds = kelasDiambil.map((k) => k.kelasId);
+
+  // Satu query groupBy untuk semua kelas (dulu 1 count per kelas = N+1).
+  const hadirPerKelas = new Map<string, number>();
+  if (kelasIds.length) {
+    const petaPertemuan = new Map<string, string>();
+    for (const k of kelasDiambil) {
+      for (const p of k.kelas.pertemuan) petaPertemuan.set(p.id, k.kelas.id);
+    }
+    const barisHadir = await prisma.absensi.groupBy({
+      by: ["pertemuanId"],
+      where: {
+        mahasiswaId: mahasiswa.id,
+        status: "hadir",
+        pertemuan: { kelasId: { in: kelasIds } },
+      },
+      _count: { _all: true },
+    });
+    for (const b of barisHadir) {
+      const kelasId = petaPertemuan.get(b.pertemuanId);
+      if (!kelasId) continue;
+      hadirPerKelas.set(kelasId, (hadirPerKelas.get(kelasId) ?? 0) + b._count._all);
+    }
+  }
+
+  const daftarKehadiran = kelasDiambil.map((k) => {
+    const total = k.kelas.pertemuan.length;
+    const hadir = hadirPerKelas.get(k.kelas.id) ?? 0;
+    return {
+      kelas: k.kelas,
+      stat: statistikKehadiran(total, hadir),
+      hadir,
+      total,
+    };
+  });
 
   const totalPertemuan = daftarKehadiran.reduce((a, d) => a + d.total, 0);
   const totalHadir = daftarKehadiran.reduce((a, d) => a + d.hadir, 0);
@@ -99,7 +114,6 @@ export default async function DashboardMahasiswa() {
   const totalSks = semuaNilai.reduce((a, n) => a + n.kelas.mataKuliah.sks, 0);
 
   // ── Tugas deadline terdekat (belum dikumpul) ───────────────────
-  const kelasIds = kelasDiambil.map((k) => k.kelasId);
   const tugas = await prisma.tugas.findMany({
     where: {
       kelasId: { in: kelasIds },

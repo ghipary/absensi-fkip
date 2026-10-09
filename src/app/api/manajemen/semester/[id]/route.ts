@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { TAG_SEMESTER } from "@/lib/cache";
 
 /**
  * PATCH /api/manajemen/semester/[id] — kaprodi menetapkan semester aktif.
@@ -32,6 +34,8 @@ export async function PATCH(
     prisma.semester.updateMany({ where: { isAktif: true }, data: { isAktif: false } }),
     prisma.semester.update({ where: { id }, data: { isAktif: true } }),
   ]);
+
+  revalidateTag(TAG_SEMESTER);
 
   await catatAudit({
     userId: user.userId,

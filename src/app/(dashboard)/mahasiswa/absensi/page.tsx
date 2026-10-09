@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { statistikKehadiran } from "@/lib/grade";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,10 +46,7 @@ export default async function HalamanAbsensiMahasiswa({
   });
   if (!mahasiswa) redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: true },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   const kelasDiambil = semesterAktif
     ? await prisma.kRS.findMany({
@@ -90,27 +88,47 @@ export default async function HalamanAbsensiMahasiswa({
     take: 50,
   });
 
-  // Statistik per kelas vs 75%
-  const statistik = await Promise.all(
-    kelasDiambil.map(async (k) => {
-      const total = k.kelas.pertemuan.length;
-      const [hadir, sakit, izin, alpha] = await Promise.all([
-        prisma.absensi.count({
-          where: { mahasiswaId: mahasiswa.id, status: "hadir", pertemuan: { kelasId: k.kelasId } },
-        }),
-        prisma.absensi.count({
-          where: { mahasiswaId: mahasiswa.id, status: "sakit", pertemuan: { kelasId: k.kelasId } },
-        }),
-        prisma.absensi.count({
-          where: { mahasiswaId: mahasiswa.id, status: "izin", pertemuan: { kelasId: k.kelasId } },
-        }),
-        prisma.absensi.count({
-          where: { mahasiswaId: mahasiswa.id, status: "alpha", pertemuan: { kelasId: k.kelasId } },
-        }),
-      ]);
-      return { kelas: k.kelas, stat: statistikKehadiran(total, hadir), hadir, sakit, izin, alpha, total };
-    })
-  );
+  // Statistik per kelas vs 75% — satu query groupBy (dulu 4 count per kelas = N+1).
+  const kelasIds = kelasDiambil.map((k) => k.kelasId);
+  const hitung = new Map<
+    string,
+    { hadir: number; sakit: number; izin: number; alpha: number }
+  >();
+  if (kelasIds.length) {
+    const petaPertemuan = new Map<string, string>();
+    for (const k of kelasDiambil) {
+      for (const p of k.kelas.pertemuan) petaPertemuan.set(p.id, k.kelasId);
+    }
+    const barisAbsen = await prisma.absensi.groupBy({
+      by: ["pertemuanId", "status"],
+      where: {
+        mahasiswaId: mahasiswa.id,
+        pertemuan: { kelasId: { in: kelasIds } },
+      },
+      _count: { _all: true },
+    });
+    for (const b of barisAbsen) {
+      const kelasId = petaPertemuan.get(b.pertemuanId);
+      if (!kelasId) continue;
+      const e = hitung.get(kelasId) ?? { hadir: 0, sakit: 0, izin: 0, alpha: 0 };
+      e[b.status as keyof typeof e] += b._count._all;
+      hitung.set(kelasId, e);
+    }
+  }
+
+  const statistik = kelasDiambil.map((k) => {
+    const total = k.kelas.pertemuan.length;
+    const e = hitung.get(k.kelasId) ?? { hadir: 0, sakit: 0, izin: 0, alpha: 0 };
+    return {
+      kelas: k.kelas,
+      stat: statistikKehadiran(total, e.hadir),
+      hadir: e.hadir,
+      sakit: e.sakit,
+      izin: e.izin,
+      alpha: e.alpha,
+      total,
+    };
+  });
 
   const adaRisiko = statistik.some((s) => !s.stat.memenuhi);
 

@@ -5,6 +5,7 @@ import { format, subMonths } from "date-fns";
 import { id as localeId } from "date-fns/locale";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { StatCard } from "@/components/shared/page-header";
 import { DashboardHero } from "@/components/shared/dashboard-hero";
 import { GrafikDistribusiNilai, GrafikTrenKehadiran } from "@/components/charts/grafik";
@@ -37,10 +38,7 @@ export default async function DashboardKaprodi() {
   const user = await getCurrentUser();
   if (!user || user.role !== "kaprodi") redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: true },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   // ── Angka utama ────────────────────────────────────────────────
   const [jumlahMhs, jumlahDosen, jumlahMK, jumlahKelas] = await Promise.all([
@@ -63,28 +61,33 @@ export default async function DashboardKaprodi() {
   }));
 
   // ── Tren kehadiran prodi per bulan (6 bulan terakhir) ──────────
+  // Satu query + bucket di memori (dulu 12 count terpisah = N+1).
   const bulanIni = new Date();
-  const tren = await Promise.all(
-    Array.from({ length: 6 }, (_, i) => {
-      const bulan = subMonths(bulanIni, 5 - i);
-      const awal = new Date(bulan.getFullYear(), bulan.getMonth(), 1);
-      const akhir = new Date(bulan.getFullYear(), bulan.getMonth() + 1, 0, 23, 59, 59);
-      return (async () => {
-        const [hadir, total] = await Promise.all([
-          prisma.absensi.count({
-            where: { status: "hadir", checkInAt: { gte: awal, lte: akhir } },
-          }),
-          prisma.absensi.count({
-            where: { checkInAt: { gte: awal, lte: akhir } },
-          }),
-        ]);
-        return {
-          periode: format(bulan, "MMM", { locale: localeId }),
-          persen: total === 0 ? 0 : Math.round((hadir / total) * 1000) / 10,
-        };
-      })();
-    })
-  );
+  const bulanAwal = subMonths(bulanIni, 5);
+  const awalRentang = new Date(bulanAwal.getFullYear(), bulanAwal.getMonth(), 1);
+  const absenRentang = await prisma.absensi.findMany({
+    where: { checkInAt: { gte: awalRentang } },
+    select: { checkInAt: true, status: true },
+  });
+  const bucket = new Map<string, { hadir: number; total: number }>();
+  for (const a of absenRentang) {
+    const key = `${a.checkInAt.getFullYear()}-${a.checkInAt.getMonth()}`;
+    const cur = bucket.get(key) ?? { hadir: 0, total: 0 };
+    cur.total++;
+    if (a.status === "hadir") cur.hadir++;
+    bucket.set(key, cur);
+  }
+  const tren = Array.from({ length: 6 }, (_, i) => {
+    const bulan = subMonths(bulanIni, 5 - i);
+    const b = bucket.get(`${bulan.getFullYear()}-${bulan.getMonth()}`) ?? {
+      hadir: 0,
+      total: 0,
+    };
+    return {
+      periode: format(bulan, "MMM", { locale: localeId }),
+      persen: b.total === 0 ? 0 : Math.round((b.hadir / b.total) * 1000) / 10,
+    };
+  });
 
   // ── Alert: mahasiswa < 75% semester ini ────────────────────────
   const kelasSemester = semesterAktif

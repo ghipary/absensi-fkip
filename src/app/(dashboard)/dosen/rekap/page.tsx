@@ -2,7 +2,13 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { statistikKehadiran } from "@/lib/grade";
+import {
+  muatRincianKehadiran,
+  hitunganKelas,
+  type RincianKehadiran,
+} from "@/lib/kehadiran";
 import { PageHeader } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,8 +35,6 @@ const TONE_GRADE: Record<string, "success" | "info" | "warning" | "danger" | "ne
   E: "danger",
 };
 
-type AbsenRingkas = { hadir: number; sakit: number; izin: number; alpha: number };
-
 export default async function HalamanRekapDosen() {
   const user = await getCurrentUser();
   if (!user || (user.role !== "dosen" && user.role !== "kaprodi")) redirect("/login");
@@ -38,10 +42,7 @@ export default async function HalamanRekapDosen() {
   const dosen = await prisma.dosen.findUnique({ where: { userId: user.userId } });
   if (!dosen) redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: { select: { nama: true } } },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   const kelasDiampu = semesterAktif
     ? await prisma.kelas.findMany({
@@ -63,66 +64,67 @@ export default async function HalamanRekapDosen() {
       })
     : [];
 
+  // Satu grup query untuk absensi (via helper) + satu untuk nilai — hindari N+1
+  // (dulu 2 query per kelas: groupBy absensi + findMany nilai).
+  const kelasIds = kelasDiampu.map((k) => k.id);
+  const rincian: RincianKehadiran = semesterAktif
+    ? await muatRincianKehadiran(semesterAktif.id)
+    : new Map();
+
+  const nilaiSemua = kelasIds.length
+    ? await prisma.nilai.findMany({
+        where: { kelasId: { in: kelasIds } },
+        select: {
+          kelasId: true,
+          mahasiswaId: true,
+          tugas: true,
+          uts: true,
+          uas: true,
+          akhir: true,
+          grade: true,
+        },
+      })
+    : [];
+
+  const nilaiPerKelas = new Map<
+    string,
+    Map<string, (typeof nilaiSemua)[number]>
+  >();
+  for (const n of nilaiSemua) {
+    let perMhs = nilaiPerKelas.get(n.kelasId);
+    if (!perMhs) {
+      perMhs = new Map();
+      nilaiPerKelas.set(n.kelasId, perMhs);
+    }
+    perMhs.set(n.mahasiswaId, n);
+  }
+
   // Kumpulkan ringkasan per kelas
-  const rekapKelas = await Promise.all(
-    kelasDiampu.map(async (kelas) => {
-      const mhsIds = kelas.krs.map((k) => k.mahasiswa.id);
+  const rekapKelas = kelasDiampu.map((kelas) => {
+    const nilaiMap = nilaiPerKelas.get(kelas.id) ?? new Map<string, (typeof nilaiSemua)[number]>();
+    const totalPertemuan = kelas.pertemuan.length;
 
-      const [barisAbsensi, barisNilai] = await Promise.all([
-        prisma.absensi.groupBy({
-          by: ["mahasiswaId", "status"],
-          where: {
-            mahasiswaId: { in: mhsIds },
-            pertemuan: { kelasId: kelas.id },
-          },
-          _count: { _all: true },
-        }),
-        prisma.nilai.findMany({
-          where: { kelasId: kelas.id, mahasiswaId: { in: mhsIds } },
-          select: {
-            mahasiswaId: true,
-            tugas: true,
-            uts: true,
-            uas: true,
-            akhir: true,
-            grade: true,
-          },
-        }),
-      ]);
+    const baris = kelas.krs.map((k) => {
+      const absen = hitunganKelas(rincian, kelas.id, k.mahasiswa.id);
+      const stat = statistikKehadiran(totalPertemuan, absen.hadir);
+      return {
+        krsId: k.id,
+        nim: k.mahasiswa.nim,
+        nama: k.mahasiswa.nama,
+        absen,
+        stat,
+        nilai: nilaiMap.get(k.mahasiswa.id) ?? null,
+      };
+    });
 
-      const absenMap = new Map<string, AbsenRingkas>();
-      for (const mhsId of mhsIds) absenMap.set(mhsId, { hadir: 0, sakit: 0, izin: 0, alpha: 0 });
-      for (const a of barisAbsensi) {
-        const e = absenMap.get(a.mahasiswaId) ?? { hadir: 0, sakit: 0, izin: 0, alpha: 0 };
-        e[a.status as keyof AbsenRingkas] = a._count._all;
-        absenMap.set(a.mahasiswaId, e);
-      }
+    const rataPersen = baris.length
+      ? Math.round((baris.reduce((a, b) => a + b.stat.persen, 0) / baris.length) * 10) / 10
+      : 0;
+    const diBawah75 = baris.filter((b) => !b.stat.memenuhi).length;
+    const nilaiTerisi = baris.filter((b) => b.nilai?.akhir != null).length;
 
-      const nilaiMap = new Map(barisNilai.map((n) => [n.mahasiswaId, n]));
-      const totalPertemuan = kelas.pertemuan.length;
-
-      const baris = kelas.krs.map((k) => {
-        const absen = absenMap.get(k.mahasiswa.id)!;
-        const stat = statistikKehadiran(totalPertemuan, absen.hadir);
-        return {
-          krsId: k.id,
-          nim: k.mahasiswa.nim,
-          nama: k.mahasiswa.nama,
-          absen,
-          stat,
-          nilai: nilaiMap.get(k.mahasiswa.id) ?? null,
-        };
-      });
-
-      const rataPersen = baris.length
-        ? Math.round((baris.reduce((a, b) => a + b.stat.persen, 0) / baris.length) * 10) / 10
-        : 0;
-      const diBawah75 = baris.filter((b) => !b.stat.memenuhi).length;
-      const nilaiTerisi = baris.filter((b) => b.nilai?.akhir !== null).length;
-
-      return { kelas, baris, rataPersen, diBawah75, nilaiTerisi, totalPertemuan };
-    })
-  );
+    return { kelas, baris, rataPersen, diBawah75, nilaiTerisi, totalPertemuan };
+  });
 
   return (
     <>

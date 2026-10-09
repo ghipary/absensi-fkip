@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { statistikKehadiran } from "@/lib/grade";
 import { muatRincianKehadiran, hitunganKelas } from "@/lib/kehadiran";
 import { PageHeader, StatCard } from "@/components/shared/page-header";
@@ -26,10 +27,7 @@ export default async function HalamanKehadiranKaprodi() {
   const user = await getCurrentUser();
   if (!user || user.role !== "kaprodi") redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: { select: { nama: true } } },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   const kelasList = semesterAktif
     ? await prisma.kelas.findMany({

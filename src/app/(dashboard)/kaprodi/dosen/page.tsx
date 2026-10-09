@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { cacheSemesterAktif } from "@/lib/cache";
 import { PageHeader, StatCard } from "@/components/shared/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,10 +24,7 @@ export default async function HalamanDosenKaprodi() {
   const user = await getCurrentUser();
   if (!user || user.role !== "kaprodi") redirect("/login");
 
-  const semesterAktif = await prisma.semester.findFirst({
-    where: { isAktif: true },
-    include: { tahun: { select: { nama: true } } },
-  });
+  const semesterAktif = await cacheSemesterAktif();
 
   const dosens = await prisma.dosen.findMany({
     where: { status: "aktif" },
