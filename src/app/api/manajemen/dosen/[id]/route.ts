@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { validasiSemesterKe } from "@/lib/semester";
+import { jenisSemesterAktif } from "@/lib/semester-server";
 import type { Prisma } from "@prisma/client";
 
 /**
  * PATCH /api/manajemen/dosen/[id] — kaprodi memperbarui profil atau status akun
  * dosen/kaprodi. Status akun `User` ikut disinkronkan bila status diubah.
- * Body: { status?, nama?, nip?, gelar?, bidangStudi?, email?, telepon? }
+ * Body: { status?, nama?, nip?, gelar?, bidangStudi?, semesterKe?, email?, telepon? }
  * Pengaman status: tidak dapat menonaktifkan akun sendiri, dan kaprodi aktif
  * terakhir tidak boleh dinonaktifkan agar tidak terjadi lockout.
  */
@@ -27,6 +29,7 @@ export async function PATCH(
     nip?: string;
     gelar?: string;
     bidangStudi?: string;
+    semesterKe?: number | string | null;
     email?: string;
     telepon?: string;
   };
@@ -96,6 +99,20 @@ export async function PATCH(
     dataDosen.bidangStudi = bidangStudi;
     lama.bidangStudi = dosen.bidangStudi;
     baru.bidangStudi = bidangStudi;
+  }
+
+  if (body.semesterKe !== undefined) {
+    const parsed = validasiSemesterKe(body.semesterKe, await jenisSemesterAktif());
+    if (!parsed.ok) {
+      const sama = String(dosen.semesterKe ?? "") === String(body.semesterKe ?? "");
+      if (!sama) {
+        return NextResponse.json({ error: parsed.pesan }, { status: 400 });
+      }
+    } else {
+      dataDosen.semesterKe = parsed.value;
+      lama.semesterKe = dosen.semesterKe;
+      baru.semesterKe = parsed.value;
+    }
   }
 
   if (body.telepon !== undefined) {

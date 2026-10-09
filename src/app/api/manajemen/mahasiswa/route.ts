@@ -3,11 +3,13 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { validasiSemesterKe } from "@/lib/semester";
+import { jenisSemesterAktif } from "@/lib/semester-server";
 
 /**
  * POST /api/manajemen/mahasiswa — kaprodi (operator) menambah akun mahasiswa baru.
  * Membuat `User` (role mahasiswa) + `Mahasiswa` sekaligus dalam satu transaksi.
- * Body: { nama, nim, angkatan, jenisKelamin, kelasMhs, email, password, telepon? }
+ * Body: { nama, nim, angkatan, jenisKelamin, kelasMhs, email, password, telepon?, semesterKe? }
  */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -24,6 +26,7 @@ export async function POST(req: NextRequest) {
     email?: string;
     password?: string;
     telepon?: string;
+    semesterKe?: number | string | null;
   };
   try {
     body = await req.json();
@@ -77,6 +80,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kata sandi minimal 6 karakter." }, { status: 400 });
   }
 
+  const semester = validasiSemesterKe(body.semesterKe, await jenisSemesterAktif());
+  if (!semester.ok) {
+    return NextResponse.json({ error: semester.pesan }, { status: 400 });
+  }
+
   const [emailDipakai, nimDipakai] = await Promise.all([
     prisma.user.findUnique({ where: { email }, select: { id: true } }),
     prisma.mahasiswa.findUnique({ where: { nim }, select: { id: true } }),
@@ -102,10 +110,11 @@ export async function POST(req: NextRequest) {
         angkatan,
         jenisKelamin,
         kelasMhs,
+        semesterKe: semester.value,
         telepon,
         status: "aktif",
       },
-      select: { id: true, nim: true, nama: true, angkatan: true, kelasMhs: true },
+      select: { id: true, nim: true, nama: true, angkatan: true, kelasMhs: true, semesterKe: true },
     });
   });
 
@@ -114,7 +123,7 @@ export async function POST(req: NextRequest) {
     aksi: "create",
     entityType: "mahasiswa",
     entityId: mahasiswa.id,
-    newValue: { nim, nama, email, angkatan, jenisKelamin, kelasMhs },
+    newValue: { nim, nama, email, angkatan, jenisKelamin, kelasMhs, semesterKe: semester.value },
   });
 
   return NextResponse.json({ ok: true, mahasiswa }, { status: 201 });

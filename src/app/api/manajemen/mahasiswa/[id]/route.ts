@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { validasiSemesterKe } from "@/lib/semester";
+import { jenisSemesterAktif } from "@/lib/semester-server";
 import type { Prisma } from "@prisma/client";
 
 /**
  * PATCH /api/manajemen/mahasiswa/[id] — kaprodi memperbaiki data profil mahasiswa
  * (mis. saat mahasiswa melaporkan kekeliruan data). Email akun `User` ikut
  * diperbarui bila dikirim.
- * Body: { nama?, nim?, angkatan?, jenisKelamin?, kelasMhs?, email?, telepon? }
+ * Body: { nama?, nim?, angkatan?, jenisKelamin?, kelasMhs?, semesterKe?, email?, telepon? }
  */
 export async function PATCH(
   req: Request,
@@ -26,6 +28,7 @@ export async function PATCH(
     angkatan?: number;
     jenisKelamin?: string;
     kelasMhs?: string;
+    semesterKe?: number | string | null;
     email?: string;
     telepon?: string;
   };
@@ -116,6 +119,20 @@ export async function PATCH(
     dataMhs.kelasMhs = kelasMhs;
     lama.kelasMhs = mhs.kelasMhs;
     baru.kelasMhs = kelasMhs;
+  }
+
+  if (body.semesterKe !== undefined) {
+    const parsed = validasiSemesterKe(body.semesterKe, await jenisSemesterAktif());
+    if (!parsed.ok) {
+      const sama = String(mhs.semesterKe ?? "") === String(body.semesterKe ?? "");
+      if (!sama) {
+        return NextResponse.json({ error: parsed.pesan }, { status: 400 });
+      }
+    } else {
+      dataMhs.semesterKe = parsed.value;
+      lama.semesterKe = mhs.semesterKe;
+      baru.semesterKe = parsed.value;
+    }
   }
 
   if (body.telepon !== undefined) {

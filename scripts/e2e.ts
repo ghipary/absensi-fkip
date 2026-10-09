@@ -1160,8 +1160,8 @@ async function main() {
 
   // 4) Buat kelas (assign dosen) → ganti pengampu → hapus.
   const semesterUji =
-    (await prisma.semester.findFirst({ where: { isAktif: true }, select: { id: true } })) ??
-    (await prisma.semester.findFirst({ select: { id: true } }));
+    (await prisma.semester.findFirst({ where: { isAktif: true }, select: { id: true, nama: true } })) ??
+    (await prisma.semester.findFirst({ select: { id: true, nama: true } }));
   const dosenPengampu = await prisma.dosen.findFirst({
     where: { status: "aktif" },
     select: { id: true },
@@ -1177,6 +1177,39 @@ async function main() {
       where: { deletedAt: null },
       select: { id: true },
     }));
+
+  // Validasi paritas semester aktif
+  if (semesterUji) {
+    const mkCek = await prisma.mataKuliah.findFirst({
+      where: { deletedAt: null, semesterKe: { not: null } },
+      select: { semesterKe: true },
+    });
+    const dosenCek = await prisma.dosen.findFirst({
+      where: { semesterKe: { not: null } },
+      select: { semesterKe: true },
+    });
+    const mhsCek = await prisma.mahasiswa.findFirst({
+      where: { semesterKe: { not: null } },
+      select: { semesterKe: true },
+    });
+    const perlu = (semesterUji.nama === "Genap" ? [2, 4, 6, 8] : [1, 3, 5, 7]);
+    const cekPar = (n: number | null | undefined) => typeof n === "number" && perlu.includes(n);
+    cek(
+      "Paritas MK mengikuti semester aktif",
+      !mkCek || cekPar(mkCek.semesterKe),
+      mkCek ? `semesterKe=${mkCek.semesterKe} tidak cocok` : ""
+    );
+    cek(
+      "Paritas dosen mengikuti semester aktif",
+      !dosenCek || cekPar(dosenCek.semesterKe),
+      dosenCek ? `semesterKe=${dosenCek.semesterKe} tidak cocok` : ""
+    );
+    cek(
+      "Paritas mahasiswa mengikuti semester aktif",
+      !mhsCek || cekPar(mhsCek.semesterKe),
+      mhsCek ? `semesterKe=${mhsCek.semesterKe} tidak cocok` : ""
+    );
+  }
   const kodeKelasUji = `E2E${suf}`;
 
   if (semesterUji && dosenPengampu && mkKelas) {

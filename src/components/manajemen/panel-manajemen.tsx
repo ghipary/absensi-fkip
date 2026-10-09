@@ -27,6 +27,11 @@ import {
   Num,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  cocokParitas,
+  opsiSelectSemesterKe,
+  type JenisSemester,
+} from "@/lib/semester";
 
 export type ItemMK = {
   id: string;
@@ -34,6 +39,7 @@ export type ItemMK = {
   nama: string;
   sks: number;
   kategori: "wajib" | "pilihan";
+  semesterKe: number | null;
   aktif: boolean;
   jumlahKelas: number;
 };
@@ -45,6 +51,7 @@ export type ItemDosen = {
   nip: string;
   gelar: string | null;
   bidang: string | null;
+  semesterKe: number | null;
   email: string;
   role: "dosen" | "kaprodi";
   status: string;
@@ -67,6 +74,7 @@ export type ItemMahasiswa = {
   angkatan: number;
   jenisKelamin: string;
   kelasMhs: string;
+  semesterKe: number | null;
   email: string;
   status: string;
 };
@@ -154,11 +162,20 @@ export function PanelManajemen({
 }: Props) {
   const router = useRouter();
 
+  // Paritas semester aktif menentukan opsi "semester ke" pada tiap form.
+  const jenisAktif = (semesterList.find((s) => s.isAktif)?.nama ??
+    "Ganjil") as JenisSemester;
+  const opsiSmtAktif = [
+    { value: "", label: "Belum dipetakan" },
+    ...opsiSelectSemesterKe(jenisAktif),
+  ];
+
   const [bukaBuat, setBukaBuat] = React.useState(false);
   const [kode, setKode] = React.useState("");
   const [nama, setNama] = React.useState("");
   const [sks, setSks] = React.useState("3");
   const [kategori, setKategori] = React.useState<"wajib" | "pilihan">("wajib");
+  const [smtMK, setSmtMK] = React.useState("");
   const [error, setError] = React.useState<string | null>(null);
   const [menyimpan, setMenyimpan] = React.useState(false);
   const [prosesId, setProsesId] = React.useState<string | null>(null);
@@ -180,6 +197,7 @@ export function PanelManajemen({
     password: "",
     gelar: "",
     bidangStudi: "",
+    semesterKe: "",
   });
   const [errDosen, setErrDosen] = React.useState<string | null>(null);
   const [simpanDosen, setSimpanDosen] = React.useState(false);
@@ -194,6 +212,7 @@ export function PanelManajemen({
     kelasMhs: "",
     email: "",
     password: "",
+    semesterKe: "",
   });
   const [errMhs, setErrMhs] = React.useState<string | null>(null);
   const [simpanMhs, setSimpanMhs] = React.useState(false);
@@ -301,7 +320,13 @@ export function PanelManajemen({
       const res = await fetch("/api/manajemen/mk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ kode, nama, sks: Number(sks), kategori }),
+        body: JSON.stringify({
+          kode,
+          nama,
+          sks: Number(sks),
+          kategori,
+          semesterKe: smtMK === "" ? null : Number(smtMK),
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -312,6 +337,7 @@ export function PanelManajemen({
       setKode("");
       setNama("");
       setSks("3");
+      setSmtMK("");
       router.refresh();
     } catch {
       setError("Tidak dapat terhubung ke server.");
@@ -394,17 +420,29 @@ export function PanelManajemen({
                     required
                   />
                 </label>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-fg-muted">Kategori</span>
-                  <Select
-                    value={kategori}
-                    onChange={(e) => setKategori(e.target.value as "wajib" | "pilihan")}
-                    options={[
-                      { value: "wajib", label: "Wajib" },
-                      { value: "pilihan", label: "Pilihan" },
-                    ]}
-                  />
-                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-fg-muted">Kategori</span>
+                    <Select
+                      value={kategori}
+                      onChange={(e) => setKategori(e.target.value as "wajib" | "pilihan")}
+                      options={[
+                        { value: "wajib", label: "Wajib" },
+                        { value: "pilihan", label: "Pilihan" },
+                      ]}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-fg-muted">
+                      Semester ke ({jenisAktif})
+                    </span>
+                    <Select
+                      value={smtMK}
+                      onChange={(e) => setSmtMK(e.target.value)}
+                      options={opsiSmtAktif}
+                    />
+                  </label>
+                </div>
                 {error && (
                   <p className="flex items-start gap-1.5 text-sm text-danger-text">
                     <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={1.5} aria-hidden />
@@ -434,6 +472,7 @@ export function PanelManajemen({
                   <TableHead>Nama</TableHead>
                   <TableHead className="w-16 text-center">SKS</TableHead>
                   <TableHead className="w-24">Kategori</TableHead>
+                  <TableHead className="w-24 text-center">Smt</TableHead>
                   <TableHead className="w-20 text-right">Kelas</TableHead>
                   <TableHead className="w-28 text-center">Status</TableHead>
                   <TableHead className="w-44 text-right">Aksi</TableHead>
@@ -452,6 +491,9 @@ export function PanelManajemen({
                       <Num className="text-fg-muted">{m.sks}</Num>
                     </TableCell>
                     <TableCell className="text-fg-muted capitalize">{m.kategori}</TableCell>
+                    <TableCell className="text-center text-xs text-fg-muted">
+                      {m.semesterKe === null ? "—" : `Smt ${m.semesterKe}`}
+                    </TableCell>
                     <TableCell className="text-right">
                       <Num className="text-fg">{m.jumlahKelas}</Num>
                     </TableCell>
@@ -618,6 +660,7 @@ export function PanelManajemen({
                       password: fd.password,
                       gelar: fd.gelar,
                       bidangStudi: fd.bidangStudi,
+                      semesterKe: fd.semesterKe === "" ? null : Number(fd.semesterKe),
                     },
                     setErrDosen,
                     setSimpanDosen,
@@ -631,6 +674,7 @@ export function PanelManajemen({
                         password: "",
                         gelar: "",
                         bidangStudi: "",
+                        semesterKe: "",
                       });
                     }
                   );
@@ -682,15 +726,27 @@ export function PanelManajemen({
                     />
                   </label>
                 </div>
-                <label className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-fg-muted">Bidang studi (opsional)</span>
-                  <Input
-                    value={fd.bidangStudi}
-                    onChange={(e) => setFd({ ...fd, bidangStudi: e.target.value })}
-                    placeholder="mis. Pendidikan Matematika"
-                    maxLength={80}
-                  />
-                </label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-fg-muted">Bidang studi (opsional)</span>
+                    <Input
+                      value={fd.bidangStudi}
+                      onChange={(e) => setFd({ ...fd, bidangStudi: e.target.value })}
+                      placeholder="mis. Pendidikan Matematika"
+                      maxLength={80}
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-fg-muted">
+                      Mengajar semester ke ({jenisAktif})
+                    </span>
+                    <Select
+                      value={fd.semesterKe}
+                      onChange={(e) => setFd({ ...fd, semesterKe: e.target.value })}
+                      options={opsiSmtAktif}
+                    />
+                  </label>
+                </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-fg-muted">Email</span>
@@ -742,6 +798,7 @@ export function PanelManajemen({
                   <TableHead className="w-28">NIP</TableHead>
                   <TableHead>Akun</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead className="w-24 text-center">Smt</TableHead>
                   <TableHead className="w-28 text-center">Status</TableHead>
                   <TableHead className="w-72 text-right">Aksi</TableHead>
                 </TableRow>
@@ -765,6 +822,9 @@ export function PanelManajemen({
                         {d.gelar && <span className="text-2xs text-fg-subtle">{d.gelar}</span>}
                       </TableCell>
                       <TableCell className="text-xs text-fg-muted">{d.email}</TableCell>
+                      <TableCell className="text-center text-xs text-fg-muted">
+                        {d.semesterKe === null ? "—" : `Smt ${d.semesterKe}`}
+                      </TableCell>
                       <TableCell className="text-center">
                         <Badge variant={aktif ? "success" : "neutral"}>{d.status}</Badge>
                       </TableCell>
@@ -848,6 +908,7 @@ export function PanelManajemen({
                       kelasMhs: fm.kelasMhs,
                       email: fm.email,
                       password: fm.password,
+                      semesterKe: fm.semesterKe === "" ? null : Number(fm.semesterKe),
                     },
                     setErrMhs,
                     setSimpanMhs,
@@ -861,6 +922,7 @@ export function PanelManajemen({
                         kelasMhs: "",
                         email: "",
                         password: "",
+                        semesterKe: "",
                       });
                     }
                   );
@@ -901,7 +963,7 @@ export function PanelManajemen({
                     />
                   </label>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid gap-3 sm:grid-cols-3">
                   <label className="flex flex-col gap-1.5">
                     <span className="text-xs font-medium text-fg-muted">Jenis kelamin</span>
                     <Select
@@ -921,6 +983,16 @@ export function PanelManajemen({
                       placeholder={`mis. ${fm.angkatan}-A`}
                       maxLength={30}
                       required
+                    />
+                  </label>
+                  <label className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium text-fg-muted">
+                      Semester ke ({jenisAktif})
+                    </span>
+                    <Select
+                      value={fm.semesterKe}
+                      onChange={(e) => setFm({ ...fm, semesterKe: e.target.value })}
+                      options={opsiSmtAktif}
                     />
                   </label>
                 </div>
@@ -976,6 +1048,7 @@ export function PanelManajemen({
                   <TableHead>Nama</TableHead>
                   <TableHead className="w-24">Angkatan</TableHead>
                   <TableHead className="w-28">Rombel</TableHead>
+                  <TableHead className="w-24 text-center">Smt</TableHead>
                   <TableHead>Email</TableHead>
                   <TableHead className="w-24 text-center">Status</TableHead>
                   <TableHead className="w-44 text-right">Aksi</TableHead>
@@ -994,6 +1067,9 @@ export function PanelManajemen({
                       <Num className="text-fg-muted">{m.angkatan}</Num>
                     </TableCell>
                     <TableCell className="text-fg-muted">{m.kelasMhs}</TableCell>
+                    <TableCell className="text-center text-xs text-fg-muted">
+                      {m.semesterKe === null ? "—" : `Smt ${m.semesterKe}`}
+                    </TableCell>
                     <TableCell className="text-xs text-fg-muted">{m.email}</TableCell>
                     <TableCell className="text-center">
                       <Badge variant={m.status === "aktif" ? "success" : "neutral"}>{m.status}</Badge>
@@ -1179,6 +1255,7 @@ export function PanelManajemen({
       {editMK && (
         <DialogEditMK
           item={editMK}
+          jenisSemester={jenisAktif}
           onClose={() => setEditMK(null)}
           onSaved={() => {
             setEditMK(null);
@@ -1189,6 +1266,7 @@ export function PanelManajemen({
       {editDosen && (
         <DialogEditDosen
           item={editDosen}
+          jenisSemester={jenisAktif}
           onClose={() => setEditDosen(null)}
           onSaved={() => {
             setEditDosen(null);
@@ -1199,6 +1277,7 @@ export function PanelManajemen({
       {editMhs && (
         <DialogEditMahasiswa
           item={editMhs}
+          jenisSemester={jenisAktif}
           onClose={() => setEditMhs(null)}
           onSaved={() => {
             setEditMhs(null);
@@ -1240,10 +1319,12 @@ function PesanGalat({ pesan }: { pesan: string | null }) {
 
 function DialogEditMK({
   item,
+  jenisSemester,
   onClose,
   onSaved,
 }: {
   item: ItemMK;
+  jenisSemester: JenisSemester;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1251,6 +1332,7 @@ function DialogEditMK({
   const [nama, setNama] = React.useState(item.nama);
   const [sks, setSks] = React.useState(String(item.sks));
   const [kategori, setKategori] = React.useState<"wajib" | "pilihan">(item.kategori);
+  const [smt, setSmt] = React.useState(item.semesterKe === null ? "" : String(item.semesterKe));
   const [error, setError] = React.useState<string | null>(null);
   const [simpan, setSimpan] = React.useState(false);
 
@@ -1263,6 +1345,7 @@ function DialogEditMK({
       nama,
       sks: Number(sks),
       kategori,
+      semesterKe: smt === "" ? null : Number(smt),
     });
     setSimpan(false);
     if (!hasil.ok) {
@@ -1314,17 +1397,32 @@ function DialogEditMK({
               required
             />
           </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-fg-muted">Kategori</span>
-            <Select
-              value={kategori}
-              onChange={(e) => setKategori(e.target.value as "wajib" | "pilihan")}
-              options={[
-                { value: "wajib", label: "Wajib" },
-                { value: "pilihan", label: "Pilihan" },
-              ]}
-            />
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-fg-muted">Kategori</span>
+              <Select
+                value={kategori}
+                onChange={(e) => setKategori(e.target.value as "wajib" | "pilihan")}
+                options={[
+                  { value: "wajib", label: "Wajib" },
+                  { value: "pilihan", label: "Pilihan" },
+                ]}
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-fg-muted">
+                Semester ke ({jenisSemester})
+              </span>
+              <Select
+                value={smt}
+                onChange={(e) => setSmt(e.target.value)}
+                options={[
+                  { value: "", label: "Belum dipetakan" },
+                  ...opsiSelectSemesterKe(jenisSemester),
+                ]}
+              />
+            </label>
+          </div>
           <PesanGalat pesan={error} />
           <DialogFooter>
             <Button type="button" variant="secondary" onClick={onClose}>
@@ -1342,10 +1440,12 @@ function DialogEditMK({
 
 function DialogEditDosen({
   item,
+  jenisSemester,
   onClose,
   onSaved,
 }: {
   item: ItemDosen;
+  jenisSemester: JenisSemester;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1354,6 +1454,7 @@ function DialogEditDosen({
   const [gelar, setGelar] = React.useState(item.gelar ?? "");
   const [bidang, setBidang] = React.useState(item.bidang ?? "");
   const [email, setEmail] = React.useState(item.email);
+  const [smt, setSmt] = React.useState(item.semesterKe === null ? "" : String(item.semesterKe));
   const [error, setError] = React.useState<string | null>(null);
   const [simpan, setSimpan] = React.useState(false);
 
@@ -1367,6 +1468,7 @@ function DialogEditDosen({
       gelar,
       bidangStudi: bidang,
       email,
+      semesterKe: smt === "" ? null : Number(smt),
     });
     setSimpan(false);
     if (!hasil.ok) {
@@ -1400,10 +1502,25 @@ function DialogEditDosen({
               <Input value={gelar} onChange={(e) => setGelar(e.target.value)} maxLength={60} />
             </label>
           </div>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-fg-muted">Bidang studi (opsional)</span>
-            <Input value={bidang} onChange={(e) => setBidang(e.target.value)} maxLength={80} />
-          </label>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-fg-muted">Bidang studi (opsional)</span>
+              <Input value={bidang} onChange={(e) => setBidang(e.target.value)} maxLength={80} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-fg-muted">
+                Mengajar semester ke ({jenisSemester})
+              </span>
+              <Select
+                value={smt}
+                onChange={(e) => setSmt(e.target.value)}
+                options={[
+                  { value: "", label: "Belum dipetakan" },
+                  ...opsiSelectSemesterKe(jenisSemester),
+                ]}
+              />
+            </label>
+          </div>
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-fg-muted">Email</span>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -1425,10 +1542,12 @@ function DialogEditDosen({
 
 function DialogEditMahasiswa({
   item,
+  jenisSemester,
   onClose,
   onSaved,
 }: {
   item: ItemMahasiswa;
+  jenisSemester: JenisSemester;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -1438,6 +1557,7 @@ function DialogEditMahasiswa({
   const [jenisKelamin, setJenisKelamin] = React.useState(item.jenisKelamin);
   const [kelasMhs, setKelasMhs] = React.useState(item.kelasMhs);
   const [email, setEmail] = React.useState(item.email);
+  const [smt, setSmt] = React.useState(item.semesterKe === null ? "" : String(item.semesterKe));
   const [error, setError] = React.useState<string | null>(null);
   const [simpan, setSimpan] = React.useState(false);
 
@@ -1452,6 +1572,7 @@ function DialogEditMahasiswa({
       jenisKelamin,
       kelasMhs,
       email,
+      semesterKe: smt === "" ? null : Number(smt),
     });
     setSimpan(false);
     if (!hasil.ok) {
@@ -1492,7 +1613,7 @@ function DialogEditMahasiswa({
               />
             </label>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <label className="flex flex-col gap-1.5">
               <span className="text-xs font-medium text-fg-muted">Jenis kelamin</span>
               <Select
@@ -1511,6 +1632,19 @@ function DialogEditMahasiswa({
                 onChange={(e) => setKelasMhs(e.target.value)}
                 maxLength={30}
                 required
+              />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-medium text-fg-muted">
+                Semester ke ({jenisSemester})
+              </span>
+              <Select
+                value={smt}
+                onChange={(e) => setSmt(e.target.value)}
+                options={[
+                  { value: "", label: "Belum dipetakan" },
+                  ...opsiSelectSemesterKe(jenisSemester),
+                ]}
               />
             </label>
           </div>
@@ -1574,6 +1708,30 @@ function DialogKelas({
   const [error, setError] = React.useState<string | null>(null);
   const [simpan, setSimpan] = React.useState(false);
 
+  // Paritas semester tujuan menentukan pengurutan MK & penyaringan dosen.
+  const jenisTerpilih = (semesterList.find((s) => s.id === semesterId)?.nama ??
+    "Ganjil") as JenisSemester;
+  const mkTerurut = [...mkAktif].sort((a, b) => {
+    const aCocok =
+      a.semesterKe !== null && cocokParitas(a.semesterKe, jenisTerpilih) ? 0 : 1;
+    const bCocok =
+      b.semesterKe !== null && cocokParitas(b.semesterKe, jenisTerpilih) ? 0 : 1;
+    if (aCocok !== bCocok) return aCocok - bCocok;
+    return a.kode.localeCompare(b.kode);
+  });
+  const dosenAktif = dosenList.filter((d) => d.status === "aktif");
+  const dosenCocok = dosenAktif.filter(
+    (d) => d.semesterKe === null || cocokParitas(d.semesterKe, jenisTerpilih)
+  );
+  const dosenDasar = dosenCocok.length > 0 ? dosenCocok : dosenAktif;
+  const dosenOpsi = (() => {
+    if (dosenId && !dosenDasar.some((d) => d.id === dosenId)) {
+      const terpilih = dosenAktif.find((d) => d.id === dosenId);
+      if (terpilih) return [terpilih, ...dosenDasar];
+    }
+    return dosenDasar;
+  })();
+
   async function kirim(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -1634,11 +1792,24 @@ function DialogKelas({
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-fg-muted">Mata kuliah</span>
+                <span className="text-xs font-medium text-fg-muted">
+                  Mata kuliah{" "}
+                  <span className="font-normal text-fg-subtle">
+                    (paritas {jenisTerpilih} diurut di atas)
+                  </span>
+                </span>
                 <Select
                   value={mkId}
                   onChange={(e) => setMkId(e.target.value)}
-                  options={mkAktif.map((m) => ({ value: m.id, label: `${m.kode} — ${m.nama}` }))}
+                  options={mkTerurut.map((m) => ({
+                    value: m.id,
+                    label:
+                      `${m.kode} — ${m.nama}` +
+                      (m.semesterKe === null ? "" : ` · Smt ${m.semesterKe}`) +
+                      (m.semesterKe !== null && !cocokParitas(m.semesterKe, jenisTerpilih)
+                        ? " · beda semester"
+                        : ""),
+                  }))}
                   disabled={mkAktif.length === 0}
                 />
               </label>
@@ -1657,17 +1828,22 @@ function DialogKelas({
           )}
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-fg-muted">Dosen pengampu</span>
+            <span className="text-xs font-medium text-fg-muted">
+              Dosen pengampu{" "}
+              <span className="font-normal text-fg-subtle">
+                (disaring paritas {jenisTerpilih})
+              </span>
+            </span>
             <Select
               value={dosenId}
               onChange={(e) => setDosenId(e.target.value)}
-              options={dosenList
-                .filter((d) => d.status === "aktif")
-                .map((d) => ({
-                  value: d.id,
-                  label: `${d.nama}${d.role === "kaprodi" ? " (kaprodi)" : ""}`,
-                }))}
-              disabled={dosenList.length === 0}
+              options={dosenOpsi.map((d) => ({
+                value: d.id,
+                label:
+                  `${d.nama}${d.role === "kaprodi" ? " (kaprodi)" : ""}` +
+                  (d.semesterKe === null ? "" : ` · Smt ${d.semesterKe}`),
+              }))}
+              disabled={dosenAktif.length === 0}
             />
           </label>
 
@@ -1750,7 +1926,7 @@ function DialogKelas({
           {!modeEdit && mkAktif.length === 0 && (
             <PesanGalat pesan="Belum ada mata kuliah aktif. Tambah mata kuliah terlebih dahulu." />
           )}
-          {dosenList.filter((d) => d.status === "aktif").length === 0 && (
+          {dosenAktif.length === 0 && (
             <PesanGalat pesan="Belum ada dosen aktif yang dapat ditugaskan." />
           )}
           <PesanGalat pesan={error} />
@@ -1763,7 +1939,7 @@ function DialogKelas({
               loading={simpan}
               disabled={
                 (!modeEdit && mkAktif.length === 0) ||
-                dosenList.filter((d) => d.status === "aktif").length === 0
+                dosenAktif.length === 0
               }
             >
               {modeEdit ? "Simpan perubahan" : "Buat kelas"}

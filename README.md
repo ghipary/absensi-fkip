@@ -25,10 +25,6 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | Dosen lain (7) | `siti.nurhaliza@wahidiyah.ac.id`, `budi.hartono@…`, dst. |
 | Mahasiswa (40) | `mahasiswa1@wahidiyah.ac.id` … `mahasiswa40@wahidiyah.ac.id` |
 
-> **Basis data saat ini sudah direset ke mode minimal**: hanya 1 kaprodi,
-> 1 dosen, dan 1 mahasiswa (`kaprodi@`, `muhammad.fauzi@`, `mahasiswa1@`) —
-> kurikulum (mata kuliah), daftar semester, dan kalender tetap. Reset dilakukan
-> oleh `npx tsx scripts/reset-minimal.ts` (menghapus seluruh data transaksi).
 > Jalankan **`npm run db:seed`** untuk memulihkan data demo penuh di atas.
 
 ## Peta route
@@ -145,8 +141,7 @@ Design system **Academic Precision**: token di `src/app/globals.css`, dipetakan 
 ```powershell
 npm run build
 npm start               # terminal 1
-npx tsx scripts/e2e.ts  # terminal 2 — 122 assertions (semua rute + alur absensi/tugas/nilai/pengumuman/manajemen akun+kelas/KRS/surat izin/kalender + ekspor Excel/PDF)
+npx tsx scripts/e2e.ts  # terminal 2
 ```
 
-> e2e dirancang untuk **data demo penuh**. Setelah reset minimal, jalankan
-> `npm run db:seed` dulu, baru `npx tsx scripts/e2e.ts`.
+> e2e dirancang untuk **data demo penuh**. Jalankan `npm run db:seed` dulu, baru `npx tsx scripts/e2e.ts`.

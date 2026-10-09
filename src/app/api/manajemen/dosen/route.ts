@@ -3,11 +3,13 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { validasiSemesterKe } from "@/lib/semester";
+import { jenisSemesterAktif } from "@/lib/semester-server";
 
 /**
  * POST /api/manajemen/dosen — kaprodi (operator) menambah akun dosen baru.
  * Membuat `User` + `Dosen` sekaligus dalam satu transaksi.
- * Body: { nama, nip, email, password, gelar?, telepon?, bidangStudi?, role? }
+ * Body: { nama, nip, email, password, gelar?, telepon?, bidangStudi?, semesterKe?, role? }
  * `role` dapat "dosen" (default) atau "kaprodi" — kaprodi lain pun dapat dibuat.
  */
 export async function POST(req: NextRequest) {
@@ -24,6 +26,7 @@ export async function POST(req: NextRequest) {
     gelar?: string;
     telepon?: string;
     bidangStudi?: string;
+    semesterKe?: number | string | null;
     role?: string;
   };
   try {
@@ -60,6 +63,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kata sandi minimal 6 karakter." }, { status: 400 });
   }
 
+  const semester = validasiSemesterKe(body.semesterKe, await jenisSemesterAktif());
+  if (!semester.ok) {
+    return NextResponse.json({ error: semester.pesan }, { status: 400 });
+  }
+
   const [emailDipakai, nipDipakai] = await Promise.all([
     prisma.user.findUnique({ where: { email }, select: { id: true } }),
     prisma.dosen.findUnique({ where: { nip }, select: { id: true } }),
@@ -85,9 +93,10 @@ export async function POST(req: NextRequest) {
         gelar,
         telepon,
         bidangStudi,
+        semesterKe: semester.value,
         status: "aktif",
       },
-      select: { id: true, nip: true, nama: true, gelar: true, bidangStudi: true },
+      select: { id: true, nip: true, nama: true, gelar: true, bidangStudi: true, semesterKe: true },
     });
   });
 
@@ -96,7 +105,7 @@ export async function POST(req: NextRequest) {
     aksi: "create",
     entityType: role === "kaprodi" ? "kaprodi" : "dosen",
     entityId: dosen.id,
-    newValue: { nip, nama, email, gelar, bidangStudi, role },
+    newValue: { nip, nama, email, gelar, bidangStudi, semesterKe: semester.value, role },
   });
 
   return NextResponse.json({ ok: true, dosen }, { status: 201 });

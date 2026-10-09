@@ -109,32 +109,32 @@ async function main() {
 
   // ── Mata kuliah Pendidikan Matematika ──────────────────────────
   const mkData = [
-    { kode: "PMK2101", nama: "Kalkulus I", sks: 4, kategori: "wajib" as const, deskripsi: "Limit, turunan, dan integral fungsi satu variabel." },
-    { kode: "PMK2102", nama: "Kalkulus II", sks: 4, kategori: "wajib" as const, deskripsi: "Integral lanjut, deret, dan aplikasi." },
-    { kode: "PMK2103", nama: "Aljabar Linear", sks: 3, kategori: "wajib" as const, deskripsi: "Matriks, ruang vektor, dan sistem linear." },
-    { kode: "PMK2104", nama: "Geometri Analitik", sks: 3, kategori: "wajib" as const, deskripsi: "Koordinat kartesian dan konik." },
-    { kode: "PMK3101", nama: "Statistika dan Probabilitas", sks: 3, kategori: "wajib" as const, deskripsi: "Statistik deskriptif, distribusi, dan uji hipotesis." },
-    { kode: "PMK3102", nama: "Struktur Aljabar", sks: 3, kategori: "wajib" as const, deskripsi: "Grup, cincin, dan medan." },
-    { kode: "PMK3103", nama: "Metode Numerik", sks: 3, kategori: "pilihan" as const, deskripsi: "Aproksimasi dan algoritma komputasi." },
-    { kode: "PMD2101", nama: "Pengantar Pendidikan Matematika", sks: 2, kategori: "wajib" as const, deskripsi: "Landasan kurikulum dan pembelajaran matematika." },
-    { kode: "PMD3101", nama: "Pembelajaran Aljabar", sks: 3, kategori: "wajib" as const, deskripsi: "Strategi mengajar aljabar di SMA." },
-    { kode: "PMD3102", nama: "Pembelajaran Geometri", sks: 3, kategori: "wajib" as const, deskripsi: "Geometri sekolah dan bantuannya." },
-    { kode: "PMD4101", nama: "Evaluasi Pembelajaran Matematika", sks: 2, kategori: "wajib" as const, deskripsi: "Asesmen formatif dan sumatif." },
-    { kode: "PMD4102", nama: "Penelitian Tindakan Kelas Matematika", sks: 3, kategori: "wajib" as const, deskripsi: "PTK siklus untuk guru matematika." },
+    { kode: "PMK2101", nama: "Kalkulus I", sks: 4, kategori: "wajib" as const, semesterKe: 1, deskripsi: "Limit, turunan, dan integral fungsi satu variabel." },
+    { kode: "PMK2102", nama: "Kalkulus II", sks: 4, kategori: "wajib" as const, semesterKe: 2, deskripsi: "Integral lanjut, deret, dan aplikasi." },
+    { kode: "PMK2103", nama: "Aljabar Linear", sks: 3, kategori: "wajib" as const, semesterKe: 3, deskripsi: "Matriks, ruang vektor, dan sistem linear." },
+    { kode: "PMK2104", nama: "Geometri Analitik", sks: 3, kategori: "wajib" as const, semesterKe: 3, deskripsi: "Koordinat kartesian dan konik." },
+    { kode: "PMK3101", nama: "Statistika dan Probabilitas", sks: 3, kategori: "wajib" as const, semesterKe: 5, deskripsi: "Statistik deskriptif, distribusi, dan uji hipotesis." },
+    { kode: "PMK3102", nama: "Struktur Aljabar", sks: 3, kategori: "wajib" as const, semesterKe: 4, deskripsi: "Grup, cincin, dan medan." },
+    { kode: "PMK3103", nama: "Metode Numerik", sks: 3, kategori: "pilihan" as const, semesterKe: 5, deskripsi: "Aproksimasi dan algoritma komputasi." },
+    { kode: "PMD2101", nama: "Pengantar Pendidikan Matematika", sks: 2, kategori: "wajib" as const, semesterKe: 1, deskripsi: "Landasan kurikulum dan pembelajaran matematika." },
+    { kode: "PMD3101", nama: "Pembelajaran Aljabar", sks: 3, kategori: "wajib" as const, semesterKe: 5, deskripsi: "Strategi mengajar aljabar di SMA." },
+    { kode: "PMD3102", nama: "Pembelajaran Geometri", sks: 3, kategori: "wajib" as const, semesterKe: 3, deskripsi: "Geometri sekolah dan bantuannya." },
+    { kode: "PMD4101", nama: "Evaluasi Pembelajaran Matematika", sks: 2, kategori: "wajib" as const, semesterKe: 5, deskripsi: "Asesmen formatif dan sumatif." },
+    { kode: "PMD4102", nama: "Penelitian Tindakan Kelas Matematika", sks: 3, kategori: "wajib" as const, semesterKe: 7, deskripsi: "PTK siklus untuk guru matematika." },
   ];
   const mks = [];
   for (const m of mkData) mks.push(await prisma.mataKuliah.create({ data: m }));
 
   // ── Dosen ──────────────────────────────────────────────────────
   const dosenData = [
-    { nip: "197803122005011003", nama: "Drs. Ahmad Sulaiman, M.Pd.", gelar: "M.Pd.", bidang: "Pendidikan Matematika", email: "ahmad.sulaiman@wahidiyah.ac.id" },
-    { nip: "198205172008121002", nama: "Siti Nurhaliza, S.Pd., M.Si.", gelar: "M.Si.", bidang: "Statistika", email: "siti.nurhaliza@wahidiyah.ac.id" },
-    { nip: "198502252010011005", nama: "Budi Hartono, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Aljabar", email: "budi.hartono@wahidiyah.ac.id" },
-    { nip: "198707142012122001", nama: "Dewi Anggraini, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Geometri", email: "dewi.anggraini@wahidiyah.ac.id" },
-    { nip: "199001052015031007", nama: "Muhammad Fauzi, S.Si., M.Si.", gelar: "M.Si.", bidang: "Kalkulus", email: "muhammad.fauzi@wahidiyah.ac.id" },
-    { nip: "199104222019032004", nama: "Ratna Sari, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Metodologi", email: "ratna.sari@wahidiyah.ac.id" },
-    { nip: "199211102020122003", nama: "Joko Widayat, S.Si., M.T.", gelar: "M.T.", bidang: "Metode Numerik", email: "joko.widayat@wahidiyah.ac.id" },
-    { nip: "199403082021011009", nama: "Fitri Handayani, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Evaluasi", email: "fitri.handayani@wahidiyah.ac.id" },
+    { nip: "197803122005011003", nama: "Drs. Ahmad Sulaiman, M.Pd.", gelar: "M.Pd.", bidang: "Pendidikan Matematika", email: "ahmad.sulaiman@wahidiyah.ac.id", semesterKe: 1 },
+    { nip: "198205172008121002", nama: "Siti Nurhaliza, S.Pd., M.Si.", gelar: "M.Si.", bidang: "Statistika", email: "siti.nurhaliza@wahidiyah.ac.id", semesterKe: 3 },
+    { nip: "198502252010011005", nama: "Budi Hartono, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Aljabar", email: "budi.hartono@wahidiyah.ac.id", semesterKe: 3 },
+    { nip: "198707142012122001", nama: "Dewi Anggraini, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Geometri", email: "dewi.anggraini@wahidiyah.ac.id", semesterKe: 5 },
+    { nip: "199001052015031007", nama: "Muhammad Fauzi, S.Si., M.Si.", gelar: "M.Si.", bidang: "Kalkulus", email: "muhammad.fauzi@wahidiyah.ac.id", semesterKe: 5 },
+    { nip: "199104222019032004", nama: "Ratna Sari, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Metodologi", email: "ratna.sari@wahidiyah.ac.id", semesterKe: 7 },
+    { nip: "199211102020122003", nama: "Joko Widayat, S.Si., M.T.", gelar: "M.T.", bidang: "Metode Numerik", email: "joko.widayat@wahidiyah.ac.id", semesterKe: 5 },
+    { nip: "199403082021011009", nama: "Fitri Handayani, S.Pd., M.Pd.", gelar: "M.Pd.", bidang: "Evaluasi", email: "fitri.handayani@wahidiyah.ac.id", semesterKe: 7 },
   ];
   // Kaprodi = akun terpisah, juga berprofil dosen
   const kaprodiDosen = await prisma.dosen.create({
@@ -143,6 +143,7 @@ async function main() {
       nama: "Prof. Dr. H. Slamet Riyadi, M.Pd.",
       gelar: "M.Pd.",
       bidangStudi: "Kepala Prodi Pendidikan Matematika",
+      semesterKe: 1, // Ganjil
       user: { create: { email: "kaprodi@wahidiyah.ac.id", passwordHash: password, role: "kaprodi" } },
     },
   });
@@ -156,6 +157,7 @@ async function main() {
           nama: d.nama,
           gelar: d.gelar,
           bidangStudi: d.bidang,
+          semesterKe: d.semesterKe,
           user: { create: { email: d.email, passwordHash: password, role: "dosen" } },
         },
       })
@@ -179,6 +181,8 @@ async function main() {
   const mahasiswas = [];
   for (let i = 0; i < 40; i++) {
     const angkatan = i < 18 ? 2023 : i < 30 ? 2024 : 2025;
+    // Semester tempuh mengikuti paritas semester aktif (Ganjil): ganjil.
+    const semesterKe = angkatan === 2023 ? 5 : angkatan === 2024 ? 3 : 1;
     const nim = `${String(angkatan).slice(2)}1010${String(i + 1).padStart(4, "0")}`;
     mahasiswas.push(
       await prisma.mahasiswa.create({
@@ -188,6 +192,7 @@ async function main() {
           angkatan,
           jenisKelamin: i % 2 === 0 ? "L" : "P",
           kelasMhs: `${angkatan}-${i % 2 === 0 ? "A" : "B"}`,
+          semesterKe,
           telepon: `0812${String(30000000 + i * 137).slice(0, 8)}`,
           user: {
             create: {
@@ -208,17 +213,18 @@ async function main() {
     { mk: 3, dosen: 3, kode: "A", hari: "Rabu", jam: ["10:00", "11:40"], ruang: "R-205" },        // Geometri Analitik
     { mk: 4, dosen: 1, kode: "A", hari: "Kamis", jam: ["08:00", "09:40"], ruang: "R-102" },       // Statistika
     { mk: 8, dosen: 5, kode: "A", hari: "Jumat", jam: ["10:00", "11:40"], ruang: "R-301" },       // Pembelajaran Aljabar
-    { mk: 11, dosen: 7, kode: "A", hari: "Sabtu", jam: ["08:00", "09:40"], ruang: "R-302" },      // PTK Matematika
+    { mk: 11, dosen: 5, kode: "A", hari: "Sabtu", jam: ["08:00", "09:40"], ruang: "R-302" },      // PTK Matematika
   ];
 
   const kelasList = [];
   for (const kd of kelasDefs) {
     const jadwalHari = HARI.includes(kd.hari as Hari) ? (kd.hari as Hari) : "Senin";
+    const dosenIdKelas = dosens[kd.dosen].id;
     const kelas = await prisma.kelas.create({
       data: {
         mkId: mks[kd.mk].id,
         semesterId: semAktif.id,
-        dosenId: dosens[kd.dosen].id,
+        dosenId: dosenIdKelas,
         kodeKelas: kd.kode,
         jadwal: {
           create: { hari: jadwalHari, jamMulai: kd.jam[0], jamSelesai: kd.jam[1], ruang: kd.ruang },

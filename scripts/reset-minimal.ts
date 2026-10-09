@@ -82,6 +82,32 @@ async function main() {
     data: { status: "aktif" },
   });
 
+  // 3b) Lengkapi peta "semester ke-" bawaan bila belum ada (paritas Ganjil:
+  //     nilai ganjil). Mata kuliah dipetakan sesuai kurikulum seed.
+  const PETA_MK: Record<string, number> = {
+    PMK2101: 1, PMK2102: 2, PMK2103: 3, PMK2104: 3,
+    PMK3101: 5, PMK3102: 4, PMK3103: 6, PMD2101: 1,
+    PMD3101: 5, PMD3102: 4, PMD4101: 6, PMD4102: 7,
+  };
+  const mkTanpaSmt = await prisma.mataKuliah.findMany({
+    where: { semesterKe: null },
+    select: { id: true, kode: true },
+  });
+  for (const m of mkTanpaSmt) {
+    const nilai = PETA_MK[m.kode];
+    if (nilai) {
+      await prisma.mataKuliah.update({ where: { id: m.id }, data: { semesterKe: nilai } });
+    }
+  }
+  await prisma.dosen.updateMany({
+    where: { user: { email: KEEP.dosen }, semesterKe: null },
+    data: { semesterKe: 5 },
+  });
+  await prisma.mahasiswa.updateMany({
+    where: { user: { email: KEEP.mahasiswa }, semesterKe: null },
+    data: { semesterKe: 5 },
+  });
+
   // 4) Ringkasan.
   const [users, dosen, mhs, mk, kelas, semester, kalender] = await Promise.all([
     prisma.user.count(),

@@ -88,18 +88,22 @@ export function StatCard({
 }) {
   const isi = (
     <>
-      <div className="flex items-start justify-between gap-3">
+      <span
+        aria-hidden
+        className="stat-glow pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full blur-2xl"
+      />
+      <div className="relative flex items-start justify-between gap-3">
         <span className="text-xs font-medium text-fg-muted">{label}</span>
         {ikon && (
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-accent-subtle text-accent transition-transform duration-200 group-hover:scale-110">
+          <span className="stat-icon flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110">
             {ikon}
           </span>
         )}
       </div>
-      <div className="mt-3 font-mono-nums text-3xl font-semibold tracking-tight text-fg">
+      <div className="relative mt-3 font-mono-nums text-3xl font-semibold tracking-tight text-fg">
         {value}
       </div>
-      <div className="mt-1 flex items-center gap-2">
+      <div className="relative mt-1 flex items-center gap-2">
         {trend && (
           <span
             className={cn(
@@ -118,7 +122,7 @@ export function StatCard({
   );
 
   const kelas =
-    "group block animate-rise rounded-xl border border-border bg-surface-gradient p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-accent-border hover:shadow-card-hover";
+    "stat-card group block animate-rise rounded-xl border border-border bg-surface-gradient p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-accent-border hover:shadow-card-hover";
 
   if (href) {
     return (

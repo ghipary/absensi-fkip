@@ -198,6 +198,7 @@ model Dosen {
   gelar        String?
   telepon      String?
   bidangStudi  String?
+  semesterKe   Int? // semester mengajar utama 1–8 (paritas Ganjil/Genap)
   status       StatusDosen @default(aktif)
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
@@ -218,6 +219,7 @@ model Mahasiswa {
   angkatan      Int
   jenisKelamin  String // "L" | "P"
   kelasMhs      String // rombongan belajar, mis. "2023-A"
+  semesterKe    Int? // semester tempuh 1–8 (paritas Ganjil/Genap)
   telepon       String?
   tanggalLahir  DateTime?
   status        StatusMahasiswa @default(aktif)
@@ -272,6 +274,7 @@ model MataKuliah {
   sks         Int
   deskripsi   String?
   kategori    KategoriMK @default(wajib)
+  semesterKe  Int? // semester kurikulum 1–8 (paritas Ganjil/Genap)
   deletedAt   DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt

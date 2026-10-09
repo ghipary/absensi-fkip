@@ -50,9 +50,7 @@ sukses (**60 rute**). e2e penuh (**122 asersi**) dirancang untuk data demo penuh
     kolom, header beku, autofilter, format angka, pewarnaan <75%/grade) dan
     `src/lib/ekspor/pdf.ts` (PDFMake — A4 landscape, ringkasan, tabel otomatis,
     nomor halaman). Endpoint `GET /api/laporan/export?format=xlsx|pdf` (kaprodi).
-    CSV lama (`TombolCSV`) dihapus. Repo di-`git init` + commit baseline
-    (`c6591ff`). Basis data direset ke mode minimal (1 kaprodi/1 dosen/1 mahasiswa)
-    via `scripts/reset-minimal.ts`; kurikulum & semester tetap.
+    CSV lama (`TombolCSV`) dihapus. Repo di-`git init` + commit baseline.
     → tsc bersih, build **60 rute**, verifikasi fokus **13/13** (e2e penuh perlu
     `npm run db:seed`).
 
@@ -278,7 +276,7 @@ tolak hapus mahasiswa berjejak (409). Total **99/99**.
 > lockout tersedia (lihat Bagian 2).
 
 ### Poles kecil yang diketahui
-- Repo git **sudah diinisialisasi**; commit baseline `c6591ff`. Belum ada remote.
+- Repo git **sudah diinisialisasi**; commit baseline. Belum ada remote.
 
 ---
 
@@ -367,7 +365,7 @@ Semua teks UI dalam Bahasa Indonesia, ikon Lucide stroke 1.5, tanpa emoji/Lorem 
 | `npm.cmd run db:up` / `db:down` | start/stop PostgreSQL embedded (port **5433**) |
 | `npm.cmd run db:setup` | `db:up` + `db push` + `db:seed` (sekali di awal) |
 | `npm.cmd run db:seed` | isi ulang data demo (menimpa) |
-| `npx.cmd tsx scripts/reset-minimal.ts` | **destruktif**: sisakan 1 kaprodi/1 dosen/1 mahasiswa, hapus transaksi (kurikulum & semester tetap) |
+
 | `npm.cmd run build` → `npm.cmd start` | mode produksi (yang dipakai untuk e2e) |
 | `npm.cmd run dev` | dev server (auto-reload) |
 | `npm.cmd run db:studio` | Prisma Studio |
@@ -397,10 +395,7 @@ Port **5433** (bukan 5432) — PostgreSQL embedded via paket `embedded-postgres`
 | Dosen lain (7) | `siti.nurhaliza@wahidiyah.ac.id`, `budi.hartono@…`, dst. |
 | Mahasiswa | `mahasiswa1@wahidiyah.ac.id` … `mahasiswa40@wahidiyah.ac.id` |
 
-> **Kondisi basis data sekarang = mode minimal**: hanya 3 akun di atas yang
-> tersisa (kaprodi, fauzi, mahasiswa1) dengan password `password123`; seluruh
-> data transaksi (kelas/KRS/absensi/nilai/tugas/pengumuman) dihapus, sedangkan
-> mata kuliah + semester + kalender tetap. Pulihkan data penuh: `npm.cmd run db:seed`.
+> Pulihkan data penuh: `npm.cmd run db:seed`.
 
 Chip login demo hanya muncul saat `NODE_ENV !== "production"`.
 

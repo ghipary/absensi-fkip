@@ -2,11 +2,13 @@ import { NextResponse, type NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
+import { validasiSemesterKe } from "@/lib/semester";
+import { jenisSemesterAktif } from "@/lib/semester-server";
 import type { KategoriMK } from "@prisma/client";
 
 /**
  * POST /api/manajemen/mk — kaprodi menambah mata kuliah baru.
- * Body: { kode, nama, sks, kategori? }
+ * Body: { kode, nama, sks, kategori?, semesterKe? }
  */
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
@@ -14,7 +16,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
   }
 
-  let body: { kode?: string; nama?: string; sks?: number; kategori?: KategoriMK };
+  let body: {
+    kode?: string;
+    nama?: string;
+    sks?: number;
+    kategori?: KategoriMK;
+    semesterKe?: number | string | null;
+  };
   try {
     body = await req.json();
   } catch {
@@ -45,6 +53,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kategori harus wajib atau pilihan." }, { status: 400 });
   }
 
+  const jenis = await jenisSemesterAktif();
+  const semester = validasiSemesterKe(body.semesterKe, jenis);
+  if (!semester.ok) {
+    return NextResponse.json({ error: semester.pesan }, { status: 400 });
+  }
+
   const sudahAda = await prisma.mataKuliah.findUnique({ where: { kode } });
   if (sudahAda) {
     return NextResponse.json(
@@ -54,7 +68,7 @@ export async function POST(req: NextRequest) {
   }
 
   const mk = await prisma.mataKuliah.create({
-    data: { kode, nama, sks, kategori },
+    data: { kode, nama, sks, kategori, semesterKe: semester.value },
   });
 
   await catatAudit({
@@ -62,7 +76,7 @@ export async function POST(req: NextRequest) {
     aksi: "create",
     entityType: "mata_kuliah",
     entityId: mk.id,
-    newValue: { kode, nama, sks, kategori },
+    newValue: { kode, nama, sks, kategori, semesterKe: semester.value },
   });
 
   return NextResponse.json({ ok: true, mataKuliah: mk }, { status: 201 });
