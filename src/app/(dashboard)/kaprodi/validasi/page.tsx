@@ -69,7 +69,7 @@ export default async function HalamanValidasi() {
         deskripsi="Tinjau perubahan nilai yang diajukan dosen pengampu. Menolak akan mengembalikan nilai ke kondisi sebelumnya — riwayat tetap tercatat seluruhnya."
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Menunggu validasi"
           value={menunggu.length}

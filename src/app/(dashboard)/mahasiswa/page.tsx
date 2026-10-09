@@ -181,7 +181,7 @@ export default async function DashboardMahasiswa() {
       />
 
       {/* Baris statistik */}
-      <div className="stagger-rise grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="stagger-rise grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Kehadiran semester ini"
           value={`${kehadiranSemester.persen}%`}

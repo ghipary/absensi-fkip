@@ -113,7 +113,7 @@ export function Sidebar({
                     aria-current={active ? "page" : undefined}
                     onClick={onClose}
                     className={cn(
-                      "group relative flex h-9 items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-sm transition-all duration-200",
+                      "group relative flex h-11 items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-sm transition-all duration-200 lg:h-9",
                       active
                         ? "bg-accent-subtle font-medium text-accent shadow-sm ring-1 ring-accent-border"
                         : "text-fg-muted hover:translate-x-0.5 hover:bg-surface-muted hover:text-fg"

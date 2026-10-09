@@ -22,11 +22,12 @@ const buttonVariants = cva(
         link: "text-accent underline-offset-4 hover:underline",
       },
       size: {
-        sm: "h-7 px-2.5 text-xs",
-        md: "h-9 px-4 text-base",
-        lg: "h-10 px-5 text-base",
-        icon: "h-9 w-9",
-        "icon-sm": "h-7 w-7",
+        // Di layar sentuh (mobile) target minimal 44px; di md+ kembali padat.
+        sm: "h-11 px-3 text-xs md:h-7 md:px-2.5",
+        md: "h-11 px-4 text-base md:h-9",
+        lg: "h-11 px-5 text-base md:h-10",
+        icon: "h-11 w-11 md:h-9 md:w-9",
+        "icon-sm": "h-11 w-11 md:h-7 md:w-7",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },

@@ -96,7 +96,7 @@ export default async function HalamanNilaiMahasiswa() {
         deskripsi="Nilai akhir per mata kuliah semester berjalan, termasuk riwayat setiap perubahan yang dilakukan dosen."
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="IPK sementara"
           value={ipk.toFixed(2)}

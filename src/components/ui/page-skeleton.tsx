@@ -27,7 +27,7 @@ export function PageSkeleton({
         <Skeleton className="mt-2 h-4 w-96 max-w-full" />
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: kartu }).map((_, i) => (
           <SkeletonKartu key={i} />
         ))}

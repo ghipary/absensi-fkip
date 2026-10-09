@@ -57,6 +57,20 @@ sukses (**60 rute**). e2e penuh (**125 asersi**) hijau pada data demo penuh
     memetakan paritas saat tambah/edit (kolom **Smt**), dialog kelas mengurutkan MK
     dan menyaring dosen sesuai paritas, seed konsisten dengan kelas, plus asersi e2e
     paritas. → tsc bersih, build **60 rute**, e2e **125/125** (lihat Bagian 2).
+12. **Batch 10 — Percepatan navigasi tab (sudah di-push)** (9 Okt): N+1 hilang,
+    cache DTO `semester aktif` (`src/lib/cache.ts` + `revalidateTag`), `loading.tsx`
+    shared berbasis skeleton, memakai Neon pooler URL + region `sin1` di Vercel.
+    Semua halaman tab ≤ ~300 ms lokal. → tsc bersih, build sukses, tersinkron
+    `origin/main` (`c5c17b1`).
+13. **Batch 11 — Responsif mobile + Hapus permanen** (9 Okt, sesi ini): sidebar sudah
+    drawer <1024px; kini stat grid 1/2/4 kolom (mobile/tablet/desktop), breadcrumb
+    disembunyikan di mobile, target sentuh ≥44px (tombol, navigasi sidebar, tab,
+    ikon topbar), tabel bisa di-scroll horizontal dengan **kolom pertama menempel**
+    (sticky, latar ikut zebra/hover), tabs overflow-x. **Hapus = hapus permanen**
+    (hard delete + cascade) dengan dialog konfirmasi berisi **rincian jumlah data
+    terkait**, tombol **Batal** / **Hapus Permanen** (merah), hanya kaprodi;
+    `Nonaktifkan` tetap tersedia sebagai alternatif. → tsc bersih, build sukses,
+    verifikasi API hapus (scratch data) + 15 halaman **ALL OK** (lihat Bagian 2).
 
 ---
 
@@ -278,6 +292,38 @@ helper server di `src/lib/semester-server.ts` (`jenisSemesterAktif`).
 - **e2e:** asersi paritas (semester ke- MK/dosen/mahasiswa mengikuti paritas semester aktif).
   → tsc bersih, build **60 rute**, e2e **125/125**.
 
+### Batch 11 — Responsif mobile + Hapus permanen (selesai, 9 Okt)
+
+**Problem 1 — Responsif/mobile UI:**
+- Stat grid: `grid-cols-2 lg:grid-cols-4` → **`grid-cols-1 sm:grid-cols-2 lg:grid-cols-4`**
+  (mobile 1 / tablet 2 / desktop 4) di 17 halaman + skeleton.
+- Topbar: breadcrumb disembunyikan di mobile (`hidden md:block`); ikon hamburger,
+  notifikasi, tema, dan menu user diperbesar ke **44px** saat <768px (padat lagi di md+).
+- `button.tsx`: ukuran `sm/md/lg/icon/icon-sm` ≥44px di mobile, `md+` kembali ramping.
+- Sidebar nav `h-11` di <lg (drawer), `lg:h-9`; `tabs.tsx`: trigger 44px di mobile,
+  list bisa di-scroll horizontal (`overflow-x-auto`).
+- `table.tsx` + `globals.css`: **kolom pertama sticky** saat scroll horizontal, latar
+  mengikuti baris/zebra/hover (`background-color: inherit`), header memakai gradasi
+  permukaan yang sama; `Card` diberi `min-w-0` agar grid tidak meluber.
+- `PageHeader`/`DashboardHero`: area aksi `flex-wrap` agar tidak terpotong di mobile.
+
+**Problem 2 — Hapus = hapus permanen (hard delete):**
+- `src/lib/hapus.ts`: `rincianHapusMahasiswa/Dosen/Kelas` + `totalRincian` — menghitung
+  data terkait yang akan ikut terhapus (KRS, absensi, tugas, nilai, kelas diampu, dsb.).
+- API `GET /api/manajemen/{mahasiswa,dosen,kelas}/[id]` (kaprodi-only) — rincian + total
+  untuk dialog konfirmasi.
+- API `DELETE` diubah: **tidak lagi 409 untuk entitas berjejak** — transaksi hard-delete;
+  untuk dosen: riwayat/pengumuman/tugas/sesi/kelas diampunya dibersihkan dulu (FK Restrict)
+  baru `User` dihapus (cascade profil + data akademik). Pengaman tetap: hanya kaprodi,
+  bukan akun sendiri, kaprodi aktif terakhir tidak boleh dihapus.
+- UI (`panel-manajemen.tsx` + `dialog-konfirmasi-hapus.tsx`): tombol **Hapus** membuka dialog
+  berisi **daftar jumlah data terkait** (load/kosong/galat) + tombol **Batal** dan
+  **Hapus Permanen** (merah, loading state); sukses → `router.refresh()`. `Nonaktifkan`
+  tetap ada sebagai alternatif non-destruktif.
+- Verifikasi: tsc bersih, build sukses, 15 halaman ketiga peran **200**, uji hapus data
+  scratch (mahasiswa & dosen + kelas diampu) → 200 dan baris benar-benar hilang,
+  DELETE id bogus → 404.
+
 ---
 
 ## 3. Yang BELUM selesai
@@ -307,8 +353,8 @@ helper server di `src/lib/semester-server.ts` (`jenisSemesterAktif`).
 ## 4. Error yang sedang terjadi
 
 **Tidak ada error aktif.** Kondisi terakhir bersih:
-`npx tsc --noEmit` = 0 error, `npm run build` = sukses **60 rute**,
-e2e penuh **125/125** (basis data berisi data demo lengkap via `npm run db:seed`).
+`npx tsc --noEmit` = 0 error, `npm run build` = sukses,
+semua halaman Problem 1 & 2 terverifikasi (15 halaman ketiga peran 200).
 
 ### Soal halaman Error State
 File-nya `src/app/(dashboard)/error.tsx` (baru dibuat batch 2). Ini **error boundary bawaan
@@ -423,10 +469,14 @@ Port **5433** (bukan 5432) — PostgreSQL embedded via paket `embedded-postgres`
 Chip login demo hanya muncul saat `NODE_ENV !== "production"`.
 
 ### Aturan main yang jangan dilanggar
-- **Nilai & absensi tidak pernah dihapus** — hanya ditimpa lewat `riwayat_perubahan`.
+- **Nilai & absensi tidak pernah dihapus langsung** — hanya ditimpa lewat `riwayat_perubahan`.
+  Pengecualian: **hapus permanen** akun/kelas oleh kaprodi (dialog konfirmasi + rincian)
+  menghapus semuanya secara cascade.
 - Skala nilai: A≥80, B≥70, C≥60, D≥50, E<50 (skala 4.0). Default bobot 30/30/40, bisa beda per kelas.
 - 16 pertemuan/kelas (dapat ditambah dosen pengampu), syarat kehadiran minimal **75%**, satu semester aktif saja.
-- Aset akademik pakai **soft delete** (`deletedAt`); KRS mahasiswa diajukan mahasiswa lalu **divalidasi kaprodi**.
+- Aset akademik memakai **soft delete** (`deletedAt`); KRS mahasiswa diajukan mahasiswa lalu **divalidasi kaprodi**.
+  Tombol **Hapus** (kaprodi saja) = hapus permanen dengan konfirmasi berisi rincian data terkait — nonaktifkan
+  sebagai alternatif non-destruktif.
 - Surat izin disimpan di `public/uploads/surat-izin/` (satu per absensi); disetujui dosen → absensi jadi `izin`.
 - QR absensi selalu diturunkan dari payload HMAC bertanda tangan (`payload.sid`), bukan body request.
 - Semua aksi CRUD/check-in/validasi ditulis ke `audit_log`.

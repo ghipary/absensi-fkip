@@ -74,7 +74,7 @@ export function DashboardHero({
             )}
           </div>
         </div>
-        {aksi && <div className="flex items-center gap-2">{aksi}</div>}
+        {aksi && <div className="flex flex-wrap items-center gap-2">{aksi}</div>}
       </div>
     </section>
   );

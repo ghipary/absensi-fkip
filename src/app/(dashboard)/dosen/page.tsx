@@ -140,7 +140,7 @@ export default async function DashboardDosen() {
         }
       />
 
-      <div className="stagger-rise grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div className="stagger-rise grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Kelas hari ini"
           value={kelasHariIni.length}

@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
-import { hitungJejakKelas, validasiJadwal, type DataJadwal, type JadwalInput } from "@/lib/kelas";
+import { validasiJadwal, type DataJadwal, type JadwalInput } from "@/lib/kelas";
+import { rincianHapusKelas, totalRincian } from "@/lib/hapus";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -137,9 +138,45 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/manajemen/kelas/[id] — hapus kelas. Kelas tanpa jejak akademik
- * dihapus permanen; kelas yang sudah punya KRS/pertemuan/nilai hanya diarsipkan
- * (soft delete) agar riwayat mahasiswa tetap utuh.
+ * GET /api/manajemen/kelas/[id] — rincian data terkait untuk dialog hapus.
+ * Hanya kaprodi yang boleh melihat & menghapus.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "kaprodi") {
+    return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const kelas = await prisma.kelas.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      kodeKelas: true,
+      deletedAt: true,
+      mataKuliah: { select: { nama: true } },
+    },
+  });
+  if (!kelas || kelas.deletedAt !== null) {
+    return NextResponse.json({ error: "Kelas tidak ditemukan." }, { status: 404 });
+  }
+
+  const rincian = await rincianHapusKelas(id);
+  return NextResponse.json({
+    label: `${kelas.mataKuliah.nama} — ${kelas.kodeKelas}`,
+    rincian,
+    total: totalRincian(rincian),
+  });
+}
+
+/**
+ * DELETE /api/manajemen/kelas/[id] — hapus permanen kelas (hard delete).
+ * Seluruh data akademik di dalamnya (KRS, pertemuan, absensi, tugas, nilai,
+ * pengumuman) ikut terhapus lewat cascade. Jumlahnya ditampilkan di dialog
+ * konfirmasi sebelum eksekusi.
  */
 export async function DELETE(
   _req: Request,
@@ -159,22 +196,21 @@ export async function DELETE(
     return NextResponse.json({ error: "Kelas tidak ditemukan." }, { status: 404 });
   }
 
-  const jejak = await hitungJejakKelas(id);
-  const arsip = jejak > 0;
+  const rincian = await rincianHapusKelas(id);
 
-  if (arsip) {
-    await prisma.kelas.update({ where: { id }, data: { deletedAt: new Date() } });
-  } else {
-    await prisma.kelas.delete({ where: { id } });
-  }
+  await prisma.kelas.delete({ where: { id } });
 
   await catatAudit({
     userId: user.userId,
     aksi: "delete",
     entityType: "kelas",
     entityId: id,
-    oldValue: { kode: kelas.mataKuliah.kode, kodeKelas: kelas.kodeKelas, arsip },
+    oldValue: {
+      kode: kelas.mataKuliah.kode,
+      kodeKelas: kelas.kodeKelas,
+      dihapus: rincian,
+    },
   });
 
-  return NextResponse.json({ ok: true, arsip });
+  return NextResponse.json({ ok: true });
 }

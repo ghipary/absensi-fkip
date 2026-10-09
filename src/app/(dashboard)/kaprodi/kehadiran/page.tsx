@@ -109,7 +109,7 @@ export default async function HalamanKehadiranKaprodi() {
         }
       />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Kelas aktif"
           value={totalKelas}

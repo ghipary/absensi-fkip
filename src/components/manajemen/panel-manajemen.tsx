@@ -27,11 +27,13 @@ import {
   Num,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DialogKonfirmasiHapus } from "@/components/ui/dialog-konfirmasi-hapus";
 import {
   cocokParitas,
   opsiSelectSemesterKe,
   type JenisSemester,
 } from "@/lib/semester";
+import type { RincianHapus } from "@/lib/hapus";
 
 export type ItemMK = {
   id: string;
@@ -180,6 +182,16 @@ export function PanelManajemen({
   const [menyimpan, setMenyimpan] = React.useState(false);
   const [prosesId, setProsesId] = React.useState<string | null>(null);
 
+  // Dialog konfirmasi hapus permanen (hard delete)
+  const [hapusTarget, setHapusTarget] = React.useState<{ url: string; label: string } | null>(
+    null
+  );
+  const [hapusRincian, setHapusRincian] = React.useState<RincianHapus[]>([]);
+  const [hapusTotal, setHapusTotal] = React.useState(0);
+  const [hapusLoading, setHapusLoading] = React.useState(false);
+  const [hapusProses, setHapusProses] = React.useState(false);
+  const [hapusGalat, setHapusGalat] = React.useState<string | null>(null);
+
   // Dialog edit entitas (null = tertutup)
   const [editMK, setEditMK] = React.useState<ItemMK | null>(null);
   const [editDosen, setEditDosen] = React.useState<ItemDosen | null>(null);
@@ -267,49 +279,55 @@ export function PanelManajemen({
     }
   }
 
-  async function hapusAkun(url: string, label: string) {
-    const ok = window.confirm(
-      `Hapus akun "${label}" secara permanen? Tindakan ini tidak dapat dibatalkan.`
-    );
-    if (!ok) return;
-    setProsesId(url);
+  /** Buka dialog konfirmasi: ambil rincian data terkait dari server lebih dulu. */
+  async function mintaHapus(url: string, label: string) {
+    setHapusTarget({ url, label });
+    setHapusRincian([]);
+    setHapusTotal(0);
+    setHapusGalat(null);
+    setHapusLoading(true);
     try {
-      const res = await fetch(url, { method: "DELETE" });
+      const res = await fetch(url);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error ?? "Gagal menghapus akun.");
+        setHapusGalat(data.error ?? "Gagal memuat data terkait.");
         return;
       }
-      router.refresh();
+      setHapusRincian(data.rincian ?? []);
+      setHapusTotal(data.total ?? 0);
     } catch {
-      alert("Tidak dapat terhubung ke server.");
+      setHapusGalat("Tidak dapat terhubung ke server.");
     } finally {
-      setProsesId(null);
+      setHapusLoading(false);
     }
   }
 
-  async function hapusKelas(kelas: ItemKelas) {
-    const ok = window.confirm(
-      `Hapus kelas "${kelas.mkNama} — ${kelas.kodeKelas} (${kelas.semesterLabel})"? ` +
-        `Kelas tanpa data akademik dihapus permanen; bila sudah punya mahasiswa/nilai, ` +
-        `kelas hanya diarsipkan agar riwayat tetap utuh.`
-    );
-    if (!ok) return;
-    const url = `/api/manajemen/kelas/${kelas.id}`;
-    setProsesId(url);
+  /** Eksekusi hard delete setelah kaprodi menekan "Hapus Permanen". */
+  async function konfirmasiHapus() {
+    if (!hapusTarget) return;
+    setHapusProses(true);
+    setHapusGalat(null);
     try {
-      const res = await fetch(url, { method: "DELETE" });
+      const res = await fetch(hapusTarget.url, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        alert(data.error ?? "Gagal menghapus kelas.");
+        setHapusGalat(data.error ?? "Gagal menghapus.");
         return;
       }
+      setHapusTarget(null);
       router.refresh();
     } catch {
-      alert("Tidak dapat terhubung ke server.");
+      setHapusGalat("Tidak dapat terhubung ke server.");
     } finally {
-      setProsesId(null);
+      setHapusProses(false);
     }
+  }
+
+  function hapusKelas(kelas: ItemKelas) {
+    mintaHapus(
+      `/api/manajemen/kelas/${kelas.id}`,
+      `${kelas.mkNama} — ${kelas.kodeKelas} (${kelas.semesterLabel})`
+    );
   }
 
   async function buatMK(e: React.FormEvent) {
@@ -857,9 +875,11 @@ export function PanelManajemen({
                             disabled={diri}
                             title={diri ? "Tidak dapat menghapus akun sendiri" : undefined}
                             onClick={() =>
-                              hapusAkun(`/api/manajemen/dosen/${d.id}`, `${d.nama} (${d.role})`)
+                              mintaHapus(
+                                `/api/manajemen/dosen/${d.id}`,
+                                `${d.nama} (${d.role})`
+                              )
                             }
-                            loading={prosesId === `/api/manajemen/dosen/${d.id}`}
                           >
                             <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                             Hapus
@@ -1084,9 +1104,11 @@ export function PanelManajemen({
                           variant="danger-ghost"
                           size="sm"
                           onClick={() =>
-                            hapusAkun(`/api/manajemen/mahasiswa/${m.id}`, `${m.nama} (mahasiswa)`)
+                            mintaHapus(
+                              `/api/manajemen/mahasiswa/${m.id}`,
+                              `${m.nama} (mahasiswa)`
+                            )
                           }
-                          loading={prosesId === `/api/manajemen/mahasiswa/${m.id}`}
                         >
                           <Trash2 className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
                           Hapus
@@ -1302,6 +1324,23 @@ export function PanelManajemen({
           }}
         />
       )}
+
+      <DialogKonfirmasiHapus
+        open={hapusTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) {
+            setHapusTarget(null);
+            setHapusGalat(null);
+          }
+        }}
+        label={hapusTarget?.label ?? ""}
+        rincian={hapusRincian}
+        total={hapusTotal}
+        loading={hapusLoading}
+        memproses={hapusProses}
+        galat={hapusGalat}
+        onKonfirmasi={konfirmasiHapus}
+      />
     </>
   );
 }

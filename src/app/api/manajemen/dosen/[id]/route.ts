@@ -4,6 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { catatAudit } from "@/lib/audit";
 import { validasiSemesterKe } from "@/lib/semester";
 import { jenisSemesterAktif } from "@/lib/semester-server";
+import { rincianHapusDosen, totalRincian } from "@/lib/hapus";
 import type { Prisma } from "@prisma/client";
 
 /**
@@ -194,10 +195,40 @@ export async function PATCH(
 }
 
 /**
- * DELETE /api/manajemen/dosen/[id] — hapus permanen akun dosen/kaprodi (dan
- * `User` terkait). Ditolak bila masih memiliki jejak akademik (kelas diampu,
- * sesi absensi, tugas, pengumuman, atau riwayat) — gunakan nonaktifkan.
- * Ditolak juga untuk akun sendiri dan kaprodi aktif terakhir.
+ * GET /api/manajemen/dosen/[id] — rincian data terkait untuk dialog hapus.
+ * Hanya kaprodi yang boleh melihat & menghapus.
+ */
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const user = await getCurrentUser();
+  if (!user || user.role !== "kaprodi") {
+    return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
+  }
+
+  const { id } = await params;
+  const dosen = await prisma.dosen.findUnique({
+    where: { id },
+    include: { user: { select: { id: true, role: true } } },
+  });
+  if (!dosen) {
+    return NextResponse.json({ error: "Akun tidak ditemukan." }, { status: 404 });
+  }
+
+  const rincian = await rincianHapusDosen(id, dosen.userId);
+  return NextResponse.json({
+    label: `${dosen.nama} (${dosen.nip})`,
+    rincian,
+    total: totalRincian(rincian),
+  });
+}
+
+/**
+ * DELETE /api/manajemen/dosen/[id] — hapus permanen akun dosen/kaprodi (hard
+ * delete). Kelas yang diampu, sesi absensi, tugas, pengumuman, dan riwayat
+ * terkait ikut terhapus (cascade). Jumlah data ditampilkan di dialog konfirmasi.
+ * Ditolak untuk akun sendiri dan kaprodi aktif terakhir.
  */
 export async function DELETE(
   _req: Request,
@@ -234,38 +265,33 @@ export async function DELETE(
     }
   }
 
-  const [kelas, sesi, tugas, pengumuman, riwayat] = await Promise.all([
-    prisma.kelas.count({ where: { dosenId: id } }),
-    prisma.sesiAbsensi.count({ where: { dosenId: id } }),
-    prisma.tugas.count({ where: { createdById: id } }),
-    prisma.pengumuman.count({ where: { createdById: dosen.userId } }),
-    prisma.riwayatPerubahan.count({
-      where: {
-        OR: [{ diubahOlehId: dosen.userId }, { reviewedById: dosen.userId }],
-      },
-    }),
-  ]);
+  const rincian = await rincianHapusDosen(id, dosen.userId);
 
-  const jejak = kelas + sesi + tugas + pengumuman + riwayat;
-  if (jejak > 0) {
-    return NextResponse.json(
-      {
-        error:
-          "Akun masih terhubung data akademik (kelas, absensi, tugas, atau riwayat). " +
-          "Nonaktifkan saja agar riwayat tetap utuh.",
-      },
-      { status: 409 }
-    );
-  }
-
-  await prisma.user.delete({ where: { id: dosen.userId } });
+  await prisma.$transaction(async (tx) => {
+    // Bersihkan relasi yang menghalangi (FK Restrict) sebelum User dihapus.
+    await tx.riwayatPerubahan.deleteMany({
+      where: { OR: [{ diubahOlehId: dosen.userId }, { reviewedById: dosen.userId }] },
+    });
+    await tx.pengumuman.deleteMany({ where: { createdById: dosen.userId } });
+    await tx.tugas.deleteMany({ where: { createdById: id } });
+    await tx.sesiAbsensi.deleteMany({ where: { dosenId: id } });
+    // Kelas cascade ke KRS, pertemuan, absensi, nilai, jadwal, dll.
+    await tx.kelas.deleteMany({ where: { dosenId: id } });
+    // Terakhir: hapus User → Dosen ikut cascade.
+    await tx.user.delete({ where: { id: dosen.userId } });
+  });
 
   await catatAudit({
     userId: user.userId,
     aksi: "delete",
     entityType: dosen.user.role === "kaprodi" ? "kaprodi" : "dosen",
     entityId: id,
-    oldValue: { nip: dosen.nip, nama: dosen.nama, role: dosen.user.role },
+    oldValue: {
+      nip: dosen.nip,
+      nama: dosen.nama,
+      role: dosen.user.role,
+      dihapus: rincian,
+    },
   });
 
   return NextResponse.json({ ok: true });

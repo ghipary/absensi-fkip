@@ -93,26 +93,28 @@ export function Topbar({
 
   return (
     <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center gap-3 border-b border-border bg-bg/85 px-4 backdrop-blur-sm lg:px-6">
-      {/* Toggle sidebar (tablet) */}
+      {/* Toggle sidebar (mobile & tablet) */}
       <button
         type="button"
         onClick={onToggleSidebar}
-        className="rounded p-1.5 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
+        className="inline-flex h-11 w-11 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent lg:hidden"
         aria-label="Buka menu navigasi"
       >
         <Menu className="h-5 w-5" strokeWidth={1.5} />
       </button>
 
-      {/* Breadcrumb */}
+      {/* Breadcrumb — disembunyikan di mobile agar tidak berdesakan */}
       <div className="min-w-0 flex-1">
-        <Breadcrumb segments={segments} />
+        <div className="hidden md:block">
+          <Breadcrumb segments={segments} />
+        </div>
       </div>
 
       {/* Cari global (Cmd+K) */}
       <button
         type="button"
         onClick={() => window.dispatchEvent(new CustomEvent("open-command"))}
-        className="hidden h-8 items-center gap-2 rounded border border-border bg-surface px-2.5 text-xs text-fg-subtle transition-colors hover:border-border-strong hover:text-fg-muted md:flex"
+        className="hidden h-9 items-center gap-2 rounded border border-border bg-surface px-2.5 text-xs text-fg-subtle transition-colors hover:border-border-strong hover:text-fg-muted md:flex"
         aria-label="Cari (Ctrl+K)"
       >
         <Search className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden />
@@ -125,7 +127,7 @@ export function Topbar({
       {/* Notifikasi */}
       <button
         type="button"
-        className="relative rounded p-1.5 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+        className="relative inline-flex h-11 w-11 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent md:h-9 md:w-9"
         aria-label={`Notifikasi${notifCount > 0 ? `, ${notifCount} belum dibaca` : ""}`}
         onClick={() => {
           setNotifCount(0);
@@ -144,7 +146,7 @@ export function Topbar({
       <button
         type="button"
         onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-        className="rounded p-1.5 text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent"
+        className="inline-flex h-11 w-11 items-center justify-center rounded text-fg-muted transition-colors hover:bg-surface-muted hover:text-fg focus-visible:ring-2 focus-visible:ring-accent md:h-9 md:w-9"
         aria-label={
           resolvedTheme === "dark" ? "Aktifkan mode terang" : "Aktifkan mode gelap"
         }
@@ -159,7 +161,7 @@ export function Topbar({
 
       {/* User menu */}
       <DropdownMenu>
-        <DropdownMenuTrigger className="flex h-9 items-center gap-2 rounded px-1.5 outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-accent data-[state=open]:bg-surface-muted">
+        <DropdownMenuTrigger className="flex h-11 items-center gap-2 rounded px-1.5 outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-accent data-[state=open]:bg-surface-muted md:h-9">
           <Avatar className="h-7 w-7">
             <AvatarFallback className="text-2xs">{inisial(nama)}</AvatarFallback>
           </Avatar>
