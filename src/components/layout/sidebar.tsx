@@ -74,7 +74,7 @@ export function Sidebar({
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-border bg-surface",
+          "fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-border bg-surface-gradient",
           "transition-transform duration-200 ease-out",
           open ? "translate-x-0" : "-translate-x-full",
           "lg:translate-x-0"

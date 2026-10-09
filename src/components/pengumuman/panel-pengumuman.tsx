@@ -227,7 +227,7 @@ export function PanelPengumuman({ daftar, kelasOptions = [], kelola = false }: P
         daftar.map((p) => (
           <article
             key={p.id}
-            className="rounded-lg border border-border bg-surface p-4 shadow-card"
+            className="rounded-lg border border-border bg-surface-gradient p-4 shadow-card"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex flex-wrap items-center gap-2">

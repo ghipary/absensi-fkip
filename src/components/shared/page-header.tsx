@@ -118,7 +118,7 @@ export function StatCard({
   );
 
   const kelas =
-    "group block animate-rise rounded-xl border border-border bg-surface p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-accent-border hover:shadow-card-hover";
+    "group block animate-rise rounded-xl border border-border bg-surface-gradient p-5 shadow-card transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-accent-border hover:shadow-card-hover";
 
   if (href) {
     return (

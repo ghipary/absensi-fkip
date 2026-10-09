@@ -15,8 +15,16 @@ export default async function LoginPage() {
 
   return (
     <div className="flex min-h-screen bg-bg">
-      {/* Panel kiri: identitas institusi — bukan gradient, bukan hero landing */}
-      <div className="hidden w-[42%] flex-col justify-between border-r border-border bg-surface p-10 lg:flex">
+      {/* Panel kiri: identitas institusi dengan gradasi lembut + glow warna */}
+      <div className="relative hidden w-[42%] flex-col justify-between overflow-hidden border-r border-border bg-surface-gradient p-10 lg:flex">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -right-24 -top-28 h-72 w-72 rounded-full bg-accent opacity-[0.12] blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -bottom-28 -left-20 h-72 w-72 rounded-full bg-info opacity-[0.12] blur-3xl"
+        />
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded bg-accent text-accent-fg">
             <GraduationCap className="h-4.5 w-4.5" strokeWidth={1.5} aria-hidden />

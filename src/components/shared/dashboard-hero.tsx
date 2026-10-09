@@ -28,19 +28,23 @@ export function DashboardHero({
   return (
     <section
       className={cn(
-        "relative mb-6 animate-rise overflow-hidden rounded-xl border border-border bg-surface shadow-card",
+        "relative mb-6 animate-rise overflow-hidden rounded-xl border border-border bg-surface-gradient shadow-card",
         className
       )}
     >
       {/* Lapisan gradasi merek lembut */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-brand-gradient opacity-[0.07]"
+        className="pointer-events-none absolute inset-0 bg-brand-gradient opacity-[0.1]"
       />
       {/* Blob dekoratif untuk kedalaman */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-accent opacity-10 blur-3xl"
+        className="pointer-events-none absolute -right-16 -top-24 h-56 w-56 rounded-full bg-accent opacity-15 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-10 h-52 w-52 rounded-full bg-info opacity-10 blur-3xl"
       />
       {/* Watermark ikon akademik */}
       <GraduationCap

@@ -103,7 +103,7 @@ function HalamanKosong({
   icon?: LucideIcon;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="rounded-lg border border-border bg-surface-gradient">
       <EmptyState icon={icon} judul={judul} deskripsi={deskripsi} aksi={aksi} />
     </div>
   );
