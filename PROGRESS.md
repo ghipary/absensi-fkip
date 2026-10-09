@@ -2,12 +2,11 @@
 
 ## 1. Terakhir ngoding
 
-**Jumat, 9 Oktober 2026 — ±05:00 WIB** (jam sistem komputer).
+**Jumat, 9 Oktober 2026 — ±08:40 WIB** (jam sistem komputer).
 
 Status saat berhenti: **hijau** — `npx tsc --noEmit` bersih, `npm run build`
-sukses (**60 rute**). e2e penuh (**122 asersi**) dirancang untuk data demo penuh
-(`npm run db:seed`); pada basis data minimal saat ini diverifikasi fokus
-**13/13** (login 3 akun + render halaman + ekspor Excel/PDF).
+sukses (**60 rute**). e2e penuh (**125 asersi**) hijau pada data demo penuh
+(`npm run db:seed`) — basis data saat ini berisi data demo lengkap.
 
 **Ringkasan lanjutan sesi (9 Okt):**
 1. `/mahasiswa/profil` (awal sesi) → terverifikasi (**29 rute, 46/46**).
@@ -53,6 +52,11 @@ sukses (**60 rute**). e2e penuh (**122 asersi**) dirancang untuk data demo penuh
     CSV lama (`TombolCSV`) dihapus. Repo di-`git init` + commit baseline.
     → tsc bersih, build **60 rute**, verifikasi fokus **13/13** (e2e penuh perlu
     `npm run db:seed`).
+11. **Batch 9 — Pemetaan semester ke- / paritas Ganjil–Genap** (9 Okt): field
+    `semesterKe` pada mata kuliah, dosen, dan mahasiswa; panel manajemen dapat
+    memetakan paritas saat tambah/edit (kolom **Smt**), dialog kelas mengurutkan MK
+    dan menyaring dosen sesuai paritas, seed konsisten dengan kelas, plus asersi e2e
+    paritas. → tsc bersih, build **60 rute**, e2e **125/125** (lihat Bagian 2).
 
 ---
 
@@ -255,6 +259,25 @@ di tab Dosen kini punya pilihan **Peran akun**, dan tabel menampilkan badge Dose
 nonaktif/hapus diri sendiri, hapus kaprodi tanpa jejak, buat+login+hapus mahasiswa,
 tolak hapus mahasiswa berjejak (409). Total **99/99**.
 
+### Batch 9 — Pemetaan semester ke- / paritas (selesai, 9 Okt)
+
+**Aturan:** semester Ganjil hanya memuat semester ke- ganjil (1, 3, 5, 7); Genap hanya
+genap (2, 4, 6, 8). Helper murni di `src/lib/semester.ts` (`opsiSemesterKe`,
+`paritasSemesterKe`, `cocokParitas`, `opsiSelectSemesterKe`, `validasiSemesterKe`) dan
+helper server di `src/lib/semester-server.ts` (`jenisSemesterAktif`).
+
+- **Skema:** `semesterKe Int?` pada `mata_kuliah`, `dosen`, dan `mahasiswa`.
+- **API:** `POST/PATCH /api/manajemen/mk`, `/api/manajemen/dosen`, dan
+  `/api/manajemen/mahasiswa` memvalidasi `semesterKe` terhadap paritas semester aktif
+  (nilai tak cocok → **400**).
+- **UI (`panel-manajemen.tsx`):** kolom **Smt** + select semester ke- (opsi mengikuti
+  paritas semester aktif) pada form tambah/edit MK, dosen, dan mahasiswa; `DialogKelas`
+  mengurutkan MK agar paritas cocok di depan dan menyaring dosen sesuai paritas.
+- **Seed (`prisma/seed.ts`):** `semesterKe` konsisten dengan kelas/semester aktif —
+  mahasiswa angkatan 2023 → 5, 2024 → 3, 2025 → 1; dosen & MK kelas aktif sesuai paritas.
+- **e2e:** asersi paritas (semester ke- MK/dosen/mahasiswa mengikuti paritas semester aktif).
+  → tsc bersih, build **60 rute**, e2e **125/125**.
+
 ---
 
 ## 3. Yang BELUM selesai
@@ -276,7 +299,8 @@ tolak hapus mahasiswa berjejak (409). Total **99/99**.
 > lockout tersedia (lihat Bagian 2).
 
 ### Poles kecil yang diketahui
-- Repo git **sudah diinisialisasi**; commit baseline. Belum ada remote.
+- Repo git **sudah diinisialisasi** + remote `origin`
+  (`github.com/ghipary/absensi-fkip`); branch `main` aktif dan tersinkron.
 
 ---
 
@@ -284,8 +308,7 @@ tolak hapus mahasiswa berjejak (409). Total **99/99**.
 
 **Tidak ada error aktif.** Kondisi terakhir bersih:
 `npx tsc --noEmit` = 0 error, `npm run build` = sukses **60 rute**,
-verifikasi fokus = **13/13**. e2e penuh (**122 asersi**) perlu `npm run db:seed`
-lebih dulu karena basis data kini dalam mode minimal.
+e2e penuh **125/125** (basis data berisi data demo lengkap via `npm run db:seed`).
 
 ### Soal halaman Error State
 File-nya `src/app/(dashboard)/error.tsx` (baru dibuat batch 2). Ini **error boundary bawaan
@@ -337,17 +360,17 @@ npm.cmd start          # → http://localhost:3000
 # 3. Pastikan masih hijau sebelum menyentuh kode
 npx.cmd tsc --noEmit
 npm.cmd run db:seed           # pulihkan data demo penuh (opsional)
-npx.cmd tsx scripts/e2e.ts    # harus 122/122 (butuh data demo penuh)
+npx.cmd tsx scripts/e2e.ts    # harus 125/125 (butuh data demo penuh)
 ```
 
 > ⚠️ **`npm start` menyajikan hasil build `next build`.** Setiap kali mengubah kode, wajib
 > hentikan server dulu (hentikan PID yang listen port 3000), `npm.cmd run build`, lalu
 > `npm.cmd start` lagi. Build ≠ auto-reload.
 
-**Batch 8 sudah tuntas** (ekspor Excel/PDF, git baseline, reset data). Prioritas berikutnya:
+**Batch 9 sudah tuntas** (pemetaan semester ke-/paritas, seed, e2e). Prioritas berikutnya:
 1. Vercel Cron reminder + verifikasi dark mode + Cmd+K untuk seluruh menu.
 2. (opsional) Ekspor rekap per-dosen di `/dosen/rekap`.
-3. Push repo ke remote (mis. GitHub) bila diinginkan.
+3. Repo sudah ter-push ke remote `origin` (`github.com/ghipary/absensi-fkip`, branch `main`).
 
 **Pola yang harus diikuti** (lihat contoh di halaman yang sudah ada):
 `page.tsx` (Server Component: `getCurrentUser` → guard role → query Prisma → pass DTO)
@@ -370,7 +393,7 @@ Semua teks UI dalam Bahasa Indonesia, ikon Lucide stroke 1.5, tanpa emoji/Lorem 
 | `npm.cmd run dev` | dev server (auto-reload) |
 | `npm.cmd run db:studio` | Prisma Studio |
 | `npx.cmd tsc --noEmit` | cek tipe |
-| `npx.cmd tsx scripts/e2e.ts` | smoke test 122 asersi (butuh server + DB nyala + data demo penuh) |
+| `npx.cmd tsx scripts/e2e.ts` | smoke test 125 asersi (butuh server + DB nyala + data demo penuh) |
 
 > **Windows/PowerShell:** pakai `npm.cmd` dan `npx.cmd` (execution policy). Node v24.21.0.
 >

@@ -53,7 +53,7 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | `/kaprodi/kehadiran` | kaprodi | ✅ monitoring kehadiran semua kelas + mahasiswa berisiko <75% |
 | `/kaprodi/dosen` | kaprodi | ✅ monitoring dosen, beban kelas, status akun |
 | `/kaprodi/laporan` | kaprodi | ✅ 3 grafik + rekap per kelas + **ekspor Excel (.xlsx) & PDF** (tabel rapi: header berwarna, border, banding, header beku, autofilter, pewarnaan <75%/grade) |
-| `/kaprodi/manajemen` | kaprodi | ✅ kelola **mata kuliah & kelas (buat/assign/edit)**, **akun dosen/kaprodi & mahasiswa (tambah/edit/hapus)**, **validasi KRS**, semester aktif |
+| `/kaprodi/manajemen` | kaprodi | ✅ kelola **mata kuliah & kelas (buat/assign/edit)**, **akun dosen/kaprodi & mahasiswa (tambah/edit/hapus)**, **validasi KRS**, semester aktif + pemetaan **semester ke- (paritas Ganjil/Genap)** |
 | `/kaprodi/pengumuman` | kaprodi | ✅ kelola pengumuman seluruh prodi/per kelas |
 | `/kaprodi/profil` | kaprodi | ✅ profil kaprodi |
 | `/kalender-akademik` | semua peran | ✅ agenda semester (kaprodi: tambah/hapus) |
@@ -78,7 +78,7 @@ Produksi (Vercel): set `DATABASE_URL` (Neon/Vercel Postgres), `AUTH_SECRET`, `NE
 | `/api/laporan/export` | GET | kaprodi (`?format=xlsx\|pdf`) |
 | `/api/pengumuman` | GET / POST | baca semua peran; tulis dosen/kaprodi |
 | `/api/pengumuman/[id]` | DELETE | dosen (milik sendiri), kaprodi |
-| `/api/manajemen/mk` | POST | kaprodi (tambah mata kuliah) |
+| `/api/manajemen/mk` | POST | kaprodi (tambah mata kuliah, `semesterKe` opsional sesuai paritas semester aktif) |
 | `/api/manajemen/mk/[id]` | PATCH | kaprodi (edit data / aktif-nonaktif mata kuliah) |
 | `/api/manajemen/kelas` | POST | kaprodi (buat kelas + assign dosen, opsional jadwal) |
 | `/api/manajemen/kelas/[id]` | PATCH / DELETE | kaprodi (edit dosen/kode/kapasitas/jadwal · hapus/arsip kelas) |
@@ -109,6 +109,28 @@ Nilai tidak pernah dihapus — hanya ditimpa, dan setiap perubahan menulis satu 
    terakhir yang belum divalidasi.
 5. Penilaian tugas men-sinkron komponen `Nilai.tugas` **hanya bila `akhir` masih null**;
    nilai akhir final harus diubah lewat tabel nilai agar terekam + tervalidasi.
+
+## Semester & paritas (semester ke-)
+
+Program studi memakai pemetaan **semester ke- 1–8** yang dipisah menurut paritas
+jenis semester (aturan di `src/lib/semester.ts`, aman untuk server & klien):
+
+| Jenis semester | Semester ke- yang sah |
+|---|---|
+| **Ganjil** | 1, 3, 5, 7 |
+| **Genap** | 2, 4, 6, 8 |
+
+- Field `semesterKe` (opsional, 1–8) disimpan pada **mata kuliah**, **dosen**, dan
+  **mahasiswa** (`prisma/schema.prisma`).
+- Formulir tambah/edit di `/kaprodi/manajemen` menampilkan pilihan "Smt" yang otomatis
+  mengikuti paritas **semester aktif** (`opsiSelectSemesterKe`); nilai di luar paritas
+  ditolak server lewat `validasiSemesterKe` (400) pada `POST/PATCH /api/manajemen/mk`,
+  `/api/manajemen/dosen`, dan `/api/manajemen/mahasiswa`.
+- Saat membuka/mengubah kelas, `DialogKelas` **mengurutkan mata kuliah** agar yang
+  paritasnya cocok dengan semester aktif muncul lebih dulu, dan **menyaring dosen**
+  berdasarkan paritas yang sama.
+- `prisma/seed.ts` mengisi `semesterKe` yang konsisten dengan kelas/paritas (mahasiswa
+  angkatan 2023 → 5, 2024 → 3, 2025 → 1).
 
 ## Keamanan absensi
 
