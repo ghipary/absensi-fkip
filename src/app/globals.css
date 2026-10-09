@@ -10,17 +10,17 @@
 
 @layer base {
   :root {
-    /* Base */
-    --bg: #fafaf9; /* stone-50 */
+    /* Base — kanvas terang, bersih, & segar (cool-neutral) */
+    --bg: #f8fafc; /* slate-50 */
     --surface: #ffffff;
-    --surface-muted: #f5f5f4; /* stone-100 — area konten dalam */
-    --border: #e7e5e4; /* stone-200 */
-    --border-strong: #d6d3d1; /* stone-300 */
+    --surface-muted: #f1f5f9; /* slate-100 — area konten dalam */
+    --border: #e2e8f0; /* slate-200 */
+    --border-strong: #cbd5e1; /* slate-300 */
 
     /* Teks */
-    --fg: #1c1917; /* stone-900 · 15,8:1 */
-    --fg-muted: #57534e; /* stone-600 · 7,4:1 */
-    --fg-subtle: #6b6560; /* 5,4:1 — teks tersier tetap nyaman dibaca */
+    --fg: #0f172a; /* slate-900 · 16,9:1 */
+    --fg-muted: #475569; /* slate-600 · 7,5:1 */
+    --fg-subtle: #64748b; /* slate-500 · 4,8:1 — teks tersier tetap lolos AA */
 
     /* Aksen tunggal */
     --accent: #047857; /* emerald-700 · 5,55:1 di putih */
@@ -53,7 +53,7 @@
     --info-border: #a5f3fc;
 
     /* Tabel */
-    --zebra: #fcfcfb;
+    --zebra: #f9fbfd;
 
     /* Overlay & elevasi */
     --overlay: rgb(28 25 23 / 0.45);
@@ -70,15 +70,15 @@
   }
 
   .dark {
-    --bg: #0a0a0a;
-    --surface: #141413;
-    --surface-muted: #1c1917;
-    --border: #292524; /* stone-800 */
-    --border-strong: #44403c; /* stone-700 */
+    --bg: #0f141b;
+    --surface: #161d26;
+    --surface-muted: #1d2733;
+    --border: #263241; /* slate-700 */
+    --border-strong: #3b4a5e; /* slate-600 */
 
-    --fg: #fafaf9;
-    --fg-muted: #d6d3d1; /* stone-300 · 11:1 */
-    --fg-subtle: #a8a29e; /* stone-400 · 6,5:1 pada latar gelap */
+    --fg: #f1f5f9;
+    --fg-muted: #cbd5e1; /* slate-300 · 11:1 */
+    --fg-subtle: #94a3b8; /* slate-400 · 7:1 pada latar gelap */
 
     --accent: #10b981; /* emerald-500 · 7,7:1 di #0A0A0A */
     --accent-hover: #34d399;
@@ -133,12 +133,14 @@
     @apply bg-bg text-fg antialiased;
     font-feature-settings: "cv02", "cv03", "cv04";
     text-rendering: optimizeLegibility;
-    /* Latar bernuansa akademik: gradasi lembut + pola titik halus (kertas grafik). */
+    /* Latar bernuansa akademik: gradasi lembut + pola titik halus (kertas grafik).
+       Nuansa lebih cerah: glow emerald/langit/indigo + tekstur titik sangat tipis. */
     background-image:
-      radial-gradient(60rem 60rem at 112% -12%, rgb(4 120 87 / 0.06), transparent 60%),
-      radial-gradient(52rem 52rem at -12% -4%, rgb(8 145 178 / 0.045), transparent 55%),
-      radial-gradient(rgb(28 25 23 / 0.05) 1px, transparent 1.2px);
-    background-size: 100% 100%, 100% 100%, 24px 24px;
+      radial-gradient(58rem 58rem at 110% -14%, rgb(16 185 129 / 0.13), transparent 62%),
+      radial-gradient(50rem 50rem at -12% -6%, rgb(56 189 248 / 0.13), transparent 58%),
+      radial-gradient(38rem 32rem at 50% -18%, rgb(129 140 248 / 0.1), transparent 60%),
+      radial-gradient(rgb(15 23 42 / 0.03) 1px, transparent 1.2px);
+    background-size: 100% 100%, 100% 100%, 100% 100%, 26px 26px;
     background-attachment: fixed;
   }
 

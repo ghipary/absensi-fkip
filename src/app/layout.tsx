@@ -40,7 +40,7 @@ export default function RootLayout({
       <body className="min-h-screen bg-bg font-sans text-base text-fg">
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
