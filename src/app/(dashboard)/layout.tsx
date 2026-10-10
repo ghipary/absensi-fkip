@@ -3,12 +3,8 @@ import { getCurrentUser, ambilNama } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { LABEL_ROLE } from "@/lib/rbac";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
+import type { Role } from "@/lib/konstanta";
 
-/**
- * Layout induk untuk /mahasiswa, /dosen, /kaprodi.
- * Middleware sudah melakukan filter role; ini double-check + data user.
- * Breadcrumb dihitung dari pathname di sisi client.
- */
 export default async function DashboardLayout({
   children,
 }: {
@@ -17,26 +13,19 @@ export default async function DashboardLayout({
   const user = await getCurrentUser();
   if (!user) redirect("/login");
 
-  const nama = await ambilNama({ id: user.userId, role: user.role });
+  const nama = await ambilNama({ id: user.sub, role: user.role as Role });
 
-  // Sublabel sidebar: NIM untuk mahasiswa, NIP untuk dosen
-  let sublabel = LABEL_ROLE[user.role];
+  let sublabel = LABEL_ROLE[user.role as Role];
   if (user.role === "mahasiswa") {
-    const m = await prisma.mahasiswa.findUnique({
-      where: { userId: user.userId },
-      select: { nim: true },
-    });
+    const m = await prisma.mahasiswa.findUnique({ where: { nim: user.sub }, select: { nim: true } });
     if (m) sublabel = `NIM ${m.nim}`;
-  } else {
-    const d = await prisma.dosen.findUnique({
-      where: { userId: user.userId },
-      select: { nip: true },
-    });
-    if (d) sublabel = `NIP ${d.nip}`;
+  } else if (user.role === "dosen" || user.role === "kaprodi") {
+    const d = await prisma.dosen.findUnique({ where: { nidn: user.sub }, select: { nidn: true } });
+    if (d) sublabel = `NIDN ${d.nidn}`;
   }
 
   return (
-    <DashboardShell role={user.role} nama={nama} sublabel={sublabel}>
+    <DashboardShell role={user.role as Role} nama={nama} sublabel={sublabel}>
       {children}
     </DashboardShell>
   );

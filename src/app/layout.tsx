@@ -4,7 +4,6 @@ import { ThemeProvider } from "next-themes";
 import { Providers } from "./providers";
 import "./globals.css";
 
-// Font utama: Plus Jakarta Sans — ramah, bulat, & sangat legibel untuk web pendidikan.
 const jakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
@@ -19,11 +18,10 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "SIAKAD Absensi FKIP — Universitas Wahidiyah",
-    template: "%s · SIAKAD Absensi FKIP",
+    default: "SIAKAD Universitas Wahidiyah",
+    template: "%s · SIAKAD Universitas Wahidiyah",
   },
-  description:
-    "Sistem absensi dan manajemen perkuliahan Program Studi Pendidikan Matematika, Fakultas Keguruan dan Ilmu Pendidikan, Universitas Wahidiyah.",
+  description: "Portal Absensi & Kegiatan Perkuliahan Universitas Wahidiyah",
 };
 
 export default function RootLayout({
@@ -32,18 +30,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang="id"
-      suppressHydrationWarning
-      className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="id" suppressHydrationWarning className={`${jakartaSans.variable} ${jetbrainsMono.variable}`}>
       <body className="min-h-screen bg-bg font-sans text-base text-fg">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <Providers>{children}</Providers>
         </ThemeProvider>
       </body>

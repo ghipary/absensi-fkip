@@ -41,3 +41,6 @@ Desktop.ini
 
 # Test / coverage
 coverage/
+
+.vercel
+.env*

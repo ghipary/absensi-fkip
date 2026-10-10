@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { MENU, LABEL_ROLE, type MenuItem } from "@/lib/rbac";
-import type { Role } from "@prisma/client";
+import type { Role } from "@/lib/konstanta";
 import {
   LayoutDashboard,
   QrCode,

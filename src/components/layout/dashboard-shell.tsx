@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
 import { CommandPalette } from "./command-palette";
-import type { Role } from "@prisma/client";
+import type { Role } from "@/lib/konstanta";
 
 /**
  * Kerangka halaman: sidebar fixed 240px (drawer di tablet),

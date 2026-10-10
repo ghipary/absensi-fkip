@@ -4,9 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 export default function Page() {
   return (
     <>
-      <PageHeader judul="Absensi" deskripsi="Isi absensi & riwayat kehadiran" />
+      <PageHeader judul="Materi Kuliah" deskripsi="Materi per mata kuliah" />
       <Card>
-        <CardContent className="p-6 text-sm text-fg-muted">Siapkan absensi.</CardContent>
+        <CardContent className="p-6 text-sm text-fg-muted">Belum ada materi.</CardContent>
       </Card>
     </>
   );

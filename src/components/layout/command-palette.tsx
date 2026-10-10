@@ -11,7 +11,7 @@ import {
   CommandList,
 } from "cmdk";
 import { MENU, LABEL_ROLE } from "@/lib/rbac";
-import type { Role } from "@prisma/client";
+import type { Role } from "@/lib/konstanta";
 import {
   LayoutDashboard,
   QrCode,

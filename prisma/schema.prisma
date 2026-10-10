@@ -1,600 +1,173 @@
 // ============================================================
-// SIAKAD Absensi FKIP — Universitas Wahidiyah
-// Program Studi Pendidikan Matematika
-// PostgreSQL · 22 tabel · soft delete untuk entitas akademik
+// SIAKAD UNIVERSITAS WAHIDIYAH (Web B)
+// Portal Absensi & Kegiatan Perkuliahan
+// SQLite · 10 tabel · data master read-only dari Web A
 // ============================================================
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.1.x", "debian-openssl-1.1.x", "linux-musl"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
-}
-
-// ─────────────────────────────────────────────
-// ENUM
-// ─────────────────────────────────────────────
-
-enum Role {
-  mahasiswa
-  dosen
-  kaprodi
-}
-
-enum StatusAkun {
-  aktif
-  nonaktif
-}
-
-enum StatusMahasiswa {
-  aktif
-  cuti
-  lulus
-  keluar
-}
-
-enum StatusDosen {
-  aktif
-  cuti
-  nonaktif
-}
-
-enum NamaSemester {
-  Ganjil
-  Genap
-}
-
-enum KategoriMK {
-  wajib
-  pilihan
-}
-
-enum StatusKRS {
-  pengajuan
-  diambil
-  drop
-  lulus
-}
-
-enum Hari {
-  Senin
-  Selasa
-  Rabu
-  Kamis
-  Jumat
-  Sabtu
-}
-
-enum MetodeSesi {
-  qr
-  kode
-}
-
-enum StatusSesi {
-  terbuka
-  ditutup
-}
-
-enum StatusKehadiran {
-  hadir
-  sakit
-  izin
-  alpha
-}
-
-enum MetodeAbsen {
-  qr
-  kode
-  manual
-  override
-}
-
-enum StatusSurat {
-  menunggu
-  disetujui
-  ditolak
-}
-
-enum CakupanPengumuman {
-  prodi
-  kelas
-}
-
-enum TipePerubahan {
-  nilai
-  absensi
-}
-
-enum StatusPerubahan {
-  otomatis
-  menunggu
-  disetujui
-  ditolak
-}
-
-enum TipeKalender {
-  libur
-  ujian
-  event
-}
-
-enum TipeNotifikasi {
-  tugas
-  absensi
-  nilai
-  pengumuman
-  sistem
-}
-
-enum AksiAudit {
-  create
-  update
-  delete
-  login
-  logout
-  export
-  approve
-  reject
-}
-
-enum Grade {
-  A
-  B
-  C
-  D
-  E
-}
-
-// ─────────────────────────────────────────────
-// IDENTITAS & AUTH
-// ─────────────────────────────────────────────
-
-model User {
-  id           String      @id @default(cuid())
-  email        String      @unique
-  passwordHash String
-  role         Role
-  status       StatusAkun  @default(aktif)
-  lastLoginAt  DateTime?
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  dosen         Dosen?
-  mahasiswa     Mahasiswa?
-  sessions      Session[]
-  notifikasi    Notifikasi[]
-  auditLog      AuditLog[]
-  pengumuman     Pengumuman[]     @relation("PengumumanPembuat")
-  riwayatubah   RiwayatPerubahan[] @relation("RiwayatPelaku")
-  riwayatreview RiwayatPerubahan[] @relation("RiwayatReviewer")
-
-  @@map("users")
-}
-
-model Session {
-  id          String    @id @default(cuid())
-  userId      String
-  tokenHash   String    @unique
-  expiresAt   DateTime
-  revokedAt   DateTime?
-  ipAddress   String?
-  userAgent   String?
-  lastUsedAt  DateTime  @default(now())
-  createdAt   DateTime  @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("sessions")
-}
-
-model Dosen {
-  id           String      @id @default(cuid())
-  userId       String      @unique
-  nip          String      @unique
-  nama         String
-  gelar        String?
-  telepon      String?
-  bidangStudi  String?
-  semesterKe   Int? // semester mengajar utama 1–8 (paritas Ganjil/Genap)
-  status       StatusDosen @default(aktif)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kelasDiampu  Kelas[]
-  sesiAbsensi  SesiAbsensi[]
-  tugasDibuat  Tugas[]
-
-  @@map("dosen")
-}
-
-model Mahasiswa {
-  id            String          @id @default(cuid())
-  userId        String          @unique
-  nim           String          @unique
-  nama          String
-  angkatan      Int
-  jenisKelamin  String // "L" | "P"
-  kelasMhs      String // rombongan belajar, mis. "2023-A"
-  semesterKe    Int? // semester tempuh 1–8 (paritas Ganjil/Genap)
-  telepon       String?
-  tanggalLahir  DateTime?
-  status        StatusMahasiswa @default(aktif)
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
-
-  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  krs        KRS[]
-  absensi    Absensi[]
-  submission Submission[]
-  nilai      Nilai[]
-
-  @@index([status, angkatan])
-  @@map("mahasiswa")
 }
 
 // ─────────────────────────────────────────────
 // STRUKTUR AKADEMIK
 // ─────────────────────────────────────────────
 
-model TahunAkademik {
-  id        String     @id @default(cuid())
-  nama      String     @unique // "2025/2026"
-  createdAt DateTime   @default(now())
-  semester  Semester[]
+model Fakultas {
+  id        String   @id @default(cuid())
+  nama      String   @unique
+  createdAt DateTime @default(now())
 
-  @@map("tahun_akademik")
+  prodi     Prodi[]
+  mahasiswa Mahasiswa[]
+  dosen     Dosen[]
+  user      User[]
 }
 
-model Semester {
-  id            String        @id @default(cuid())
-  tahunId       String
-  nama          NamaSemester
-  tanggalMulai  DateTime
-  tanggalSelesai DateTime
-  isAktif       Boolean       @default(false)
-  createdAt     DateTime      @default(now())
+model Prodi {
+  id         String  @id @default(cuid())
+  fakultasId String
+  nama       String
+  jenjang    String // S1 | D3
 
-  tahun    TahunAkademik       @relation(fields: [tahunId], references: [id], onDelete: Cascade)
-  kelas    Kelas[]
-  pengumuman Pengumuman[]
-  kalender  KalenderAkademik[]
+  fakultas  Fakultas  @relation(fields: [fakultasId], references: [id], onDelete: Cascade)
+  mahasiswa Mahasiswa[]
+  dosen     Dosen[]
+  user      User[]
 
-  @@unique([tahunId, nama])
-  @@map("semester")
+  @@unique([fakultasId, nama, jenjang])
 }
+
+model Mahasiswa {
+  id         String @id @default(cuid())
+  nim        String @unique
+  nama       String
+  fakultasId String
+  prodiId    String
+  angkatan   Int
+  status     String @default("aktif")
+
+  fakultas Fakultas @relation(fields: [fakultasId], references: [id])
+  prodi    Prodi    @relation(fields: [prodiId], references: [id])
+
+  @@index([prodiId])
+}
+
+model Dosen {
+  id         String  @id @default(cuid())
+  nidn       String  @unique
+  nama       String
+  fakultasId String
+  prodiId    String
+  jabatan    String?
+
+  fakultas Fakultas @relation(fields: [fakultasId], references: [id])
+  prodi    Prodi    @relation(fields: [prodiId], references: [id])
+  jadwal   Jadwal[]
+
+  @@index([prodiId])
+}
+
+// ─────────────────────────────────────────────
+// AKUN & OTORISASI
+// ─────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  identitas    String   @unique
+  nama         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  fakultasId   String?
+  prodiId      String?
+  aktif        Boolean  @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  fakultas Fakultas? @relation(fields: [fakultasId], references: [id])
+  prodi    Prodi?    @relation(fields: [prodiId], references: [id])
+}
+
+// ─────────────────────────────────────────────
+// PERKULIAHAN
+// ─────────────────────────────────────────────
 
 model MataKuliah {
-  id          String     @id @default(cuid())
-  kode        String     @unique // "PMK2101"
-  nama        String // "Kalkulus I"
-  sks         Int
-  deskripsi   String?
-  kategori    KategoriMK @default(wajib)
-  semesterKe  Int? // semester kurikulum 1–8 (paritas Ganjil/Genap)
-  deletedAt   DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id     String @id @default(cuid())
+  kodeMk String @unique
+  namaMk String
+  sks    Int
 
-  kelas Kelas[]
-
-  @@map("mata_kuliah")
-}
-
-model Kelas {
-  id          String   @id @default(cuid())
-  mkId        String
-  semesterId  String
-  dosenId     String // pengampu
-  kodeKelas   String   @default("A")
-  kapasitas   Int      @default(40)
-  bobotTugas  Float    @default(0.3)
-  bobotUTS    Float    @default(0.3)
-  bobotUAS    Float    @default(0.4)
-  deletedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  mataKuliah MataKuliah       @relation(fields: [mkId], references: [id])
-  semester   Semester         @relation(fields: [semesterId], references: [id])
-  dosen      Dosen            @relation(fields: [dosenId], references: [id])
-  jadwal     Jadwal[]
-  krs        KRS[]
-  pertemuan  Pertemuan[]
-  tugas      Tugas[]
-  nilai      Nilai[]
-  pengumuman Pengumuman[]
-  sesiAbsensi SesiAbsensi[]
-
-  @@unique([mkId, semesterId, kodeKelas])
-  @@index([semesterId])
-  @@index([dosenId])
-  @@map("kelas")
+  jadwal Jadwal[]
 }
 
 model Jadwal {
-  id        String @id @default(cuid())
-  kelasId   String
-  hari      Hari
-  jamMulai  String // "08:00"
-  jamSelesai String // "09:40"
-  ruang     String
+  id         String @id @default(cuid())
+  kodeMk     String
+  kelas      String
+  nidnDosen  String
+  ruang      String
+  hari       String
+  jamMulai   String
+  jamSelesai String
+  semester   String
 
-  kelas Kelas @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-
-  @@index([kelasId, hari])
-  @@map("jadwal")
-}
-
-model KRS {
-  id           String     @id @default(cuid())
-  kelasId      String
-  mahasiswaId  String
-  status       StatusKRS  @default(diambil)
-  createdAt    DateTime   @default(now())
-
-  kelas     Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  mahasiswa Mahasiswa @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
-
-  @@unique([kelasId, mahasiswaId])
-  @@index([mahasiswaId])
-  @@map("krs")
-}
-
-model Pertemuan {
-  id        String    @id @default(cuid())
-  kelasId   String
-  nomor     Int // 1..16
-  tanggal   DateTime
-  topik     String?
-  isLocked  Boolean   @default(false)
-
-  kelas      Kelas         @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  sesiAbsensi SesiAbsensi[]
+  mataKuliah MataKuliah @relation(fields: [kodeMk], references: [kodeMk], onDelete: Cascade)
+  dosen      Dosen      @relation(fields: [nidnDosen], references: [nidn])
+  materi     Materi[]
   absensi    Absensi[]
 
-  @@unique([kelasId, nomor])
-  @@index([kelasId, tanggal])
-  @@map("pertemuan")
-}
-
-model KalenderAkademik {
-  id          String      @id @default(cuid())
-  semesterId  String
-  tanggal     DateTime
-  tipe        TipeKalender
-  judul       String
-  deskripsi   String?
-
-  semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
-
-  @@index([semesterId, tanggal])
-  @@map("kalender_akademik")
+  @@unique([kodeMk, kelas, semester])
+  @@index([nidnDosen])
 }
 
 // ─────────────────────────────────────────────
-// ABSENSI
+// MATERI & ABSENSI
 // ─────────────────────────────────────────────
 
-model SesiAbsensi {
-  id           String      @id @default(cuid())
-  pertemuanId  String
-  kelasId      String
-  dosenId      String
-  metode       MetodeSesi  @default(qr)
-  token        String      @unique // token signed (HMAC) untuk QR
-  kodeUnik     String // 6 digit, fallback manual
-  expiresAt    DateTime
-  status       StatusSesi  @default(terbuka)
-  openedAt     DateTime    @default(now())
-  closedAt     DateTime?
-  lokasiWajib  Boolean     @default(false)
-  latitude     Float?
-  longitude    Float?
-  radiusMeter  Int         @default(100)
+model Materi {
+  id         String   @id @default(cuid())
+  jadwalId   String
+  judul      String
+  deskripsi  String?
+  fileUrl    String?
+  dibuatOleh String
+  tanggal    DateTime @default(now())
 
-  pertemuan Pertemuan @relation(fields: [pertemuanId], references: [id], onDelete: Cascade)
-  kelas     Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  dosen     Dosen     @relation(fields: [dosenId], references: [id])
-  absensi   Absensi[]
+  jadwal Jadwal @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
 
-  @@index([pertemuanId])
-  @@index([status, expiresAt])
-  @@map("sesi_absensi")
+  @@index([jadwalId])
 }
 
 model Absensi {
-  id          String         @id @default(cuid())
-  sesiId      String?
-  pertemuanId String
-  mahasiswaId String
-  status      StatusKehadiran
-  metode      MetodeAbsen
-  checkInAt   DateTime       @default(now())
-  lokasiLat   Float?
-  lokasiLng   Float?
-  catatan     String?
+  id               String   @id @default(cuid())
+  jadwalId         String
+  nim              String
+  tanggal          DateTime
+  status           String
+  waktu            DateTime @default(now())
+  diverifikasiOleh String?
+  statusVerifikasi String   @default("menunggu")
 
-  sesi      SesiAbsensi? @relation(fields: [sesiId], references: [id], onDelete: SetNull)
-  pertemuan Pertemuan    @relation(fields: [pertemuanId], references: [id], onDelete: Cascade)
-  mahasiswa Mahasiswa    @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
-  surat     SuratIzin?
-  riwayat   RiwayatPerubahan[]
+  jadwal Jadwal @relation(fields: [jadwalId], references: [id], onDelete: Cascade)
 
-  @@unique([pertemuanId, mahasiswaId])
-  @@index([mahasiswaId])
-  @@map("absensi")
-}
-
-model SuratIzin {
-  id           String      @id @default(cuid())
-  absensiId    String      @unique
-  filePath     String
-  keterangan   String?
-  status       StatusSurat @default(menunggu)
-  reviewedById String?
-  createdAt    DateTime    @default(now())
-
-  absensi Absensi @relation(fields: [absensiId], references: [id], onDelete: Cascade)
-
-  @@map("surat_izin")
+  @@unique([jadwalId, nim, tanggal])
+  @@index([nim])
 }
 
 // ─────────────────────────────────────────────
-// TUGAS & NILAI
+// LOG
 // ─────────────────────────────────────────────
 
-model Tugas {
-  id           String    @id @default(cuid())
-  kelasId      String
-  judul        String
-  deskripsi    String
-  deadlineAt   DateTime
-  bobotPoin    Float     @default(100)
-  lampiranPath String?
-  createdById  String
-  publishedAt  DateTime? // null = terjadwal, belum terlihat mahasiswa
-  deletedAt    DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-
-  kelas      Kelas        @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  pembuat    Dosen        @relation(fields: [createdById], references: [id])
-  submission Submission[]
-
-  @@index([kelasId, deadlineAt])
-  @@map("tugas")
-}
-
-model Submission {
-  id          String    @id @default(cuid())
-  tugasId     String
-  mahasiswaId String
-  teks        String?
-  filePath    String?
-  linkUrl     String?
-  submittedAt DateTime  @default(now())
-  isTerlambat Boolean   @default(false)
-  nilai       Float?
-  feedback    String?
-  dinilaiOlehId String?
-  dinilaiPada DateTime?
-
-  tugas     Tugas     @relation(fields: [tugasId], references: [id], onDelete: Cascade)
-  mahasiswa Mahasiswa @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
-
-  @@unique([tugasId, mahasiswaId])
-  @@index([mahasiswaId])
-  @@map("submission")
-}
-
-model Nilai {
-  id          String   @id @default(cuid())
-  kelasId     String
-  mahasiswaId String
-  tugas       Float? // rata-rata tugas ternormalisasi 0–100
-  uts         Float?
-  uas         Float?
-  akhir       Float? // tugas×bobotTugas + uts×bobotUTS + uas×bobotUAS
-  grade       Grade?
-  updatedById String?
-  updatedAt   DateTime @updatedAt
-  createdAt   DateTime @default(now())
-
-  kelas     Kelas     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  mahasiswa Mahasiswa @relation(fields: [mahasiswaId], references: [id], onDelete: Cascade)
-
-  riwayat RiwayatPerubahan[]
-
-  @@unique([kelasId, mahasiswaId])
-  @@index([mahasiswaId])
-  @@map("nilai")
-}
-
-model RiwayatPerubahan {
-  id           String           @id @default(cuid())
-  tipe         TipePerubahan
-  nilaiId      String? // FK ke Nilai bila tipe = nilai
-  absensiId    String? // FK ke Absensi bila tipe = absensi
-  kelasId      String?
-  mahasiswaId  String?
-  field        String // mis. "akhir", "status"
-  nilaiLama    String?
-  nilaiBaru    String?
-  alasan       String?
-  diubahOlehId String
-  status       StatusPerubahan  @default(otomatis)
-  reviewedById String?
-  reviewedAt   DateTime?
-  createdAt    DateTime         @default(now())
-
-  nilai    Nilai?   @relation(fields: [nilaiId], references: [id], onDelete: Cascade)
-  absensi  Absensi? @relation(fields: [absensiId], references: [id], onDelete: Cascade)
-  pelaku   User     @relation("RiwayatPelaku", fields: [diubahOlehId], references: [id])
-  reviewer User?    @relation("RiwayatReviewer", fields: [reviewedById], references: [id])
-
-  @@index([tipe, status])
-  @@index([kelasId])
-  @@map("riwayat_perubahan")
-}
-
-// ─────────────────────────────────────────────
-// KOMUNIKASI & SISTEM
-// ─────────────────────────────────────────────
-
-model Pengumuman {
-  id           String            @id @default(cuid())
-  judul        String
-  konten       String
-  cakupan      CakupanPengumuman @default(prodi)
-  kelasId      String?
-  semesterId   String?
-  createdById  String
-  publishedAt  DateTime          @default(now())
-  createdAt    DateTime          @default(now())
-
-  kelas     Kelas?     @relation(fields: [kelasId], references: [id], onDelete: Cascade)
-  semester  Semester?  @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  pembuat   User       @relation("PengumumanPembuat", fields: [createdById], references: [id])
-
-  @@index([cakupan, publishedAt])
-  @@map("pengumuman")
-}
-
-model Notifikasi {
-  id        String          @id @default(cuid())
-  userId    String
-  tipe      TipeNotifikasi
-  judul     String
-  pesan     String
-  link      String?
-  isRead    Boolean         @default(false)
-  createdAt DateTime        @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead, createdAt])
-  @@map("notifikasi")
-}
-
-model AuditLog {
-  id         String     @id @default(cuid())
-  userId     String?
-  aksi       AksiAudit
-  entityType String
-  entityId   String?
-  oldValue   Json?
-  newValue   Json?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime   @default(now())
-
-  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
-
-  @@index([entityType, entityId])
-  @@index([createdAt])
-  @@map("audit_log")
+model LogAktivitas {
+  id    String   @id @default(cuid())
+  user  String
+  aksi  String
+  waktu DateTime @default(now())
 }

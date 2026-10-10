@@ -1,10 +1,14 @@
-import type { Role } from "@prisma/client";
+import type { Role } from "./konstanta";
 
-/** Route prefix → role yang diizinkan. Dipakai middleware + guard halaman. */
+export { LABEL_ROLE } from "./konstanta";
+export type { Role } from "./konstanta";
+
+/** Prefix route → role yang diizinkan. Dipakai middleware + guard halaman. */
 export const ROLE_ROUTE: Record<string, Role> = {
   "/mahasiswa": "mahasiswa",
   "/dosen": "dosen",
   "/kaprodi": "kaprodi",
+  "/admin": "admin",
 };
 
 export function cocokkanRole(pathname: string, role: Role): boolean {
@@ -13,54 +17,45 @@ export function cocokkanRole(pathname: string, role: Role): boolean {
       return r === role;
     }
   }
-  return true; // route publik (login, dsb.)
+  return true; // route publik (landing, login, dsb.)
 }
-
-export const LABEL_ROLE: Record<Role, string> = {
-  mahasiswa: "Mahasiswa",
-  dosen: "Dosen",
-  kaprodi: "Kaprodi",
-};
 
 /** Menu sidebar per role — satu sumber kebenaran navigasi. */
 export type MenuItem = {
   label: string;
   href: string;
   icon: string; // nama ikon Lucide
-  badge?: "tugas" | "absensi" | "notifikasi";
 };
 
+const MENU_MAHASISWA: MenuItem[] = [
+  { label: "Dashboard", href: "/mahasiswa", icon: "LayoutDashboard" },
+  { label: "Jadwal Kuliah", href: "/mahasiswa/jadwal", icon: "CalendarDays" },
+  { label: "Materi Kuliah", href: "/mahasiswa/materi", icon: "BookOpen" },
+  { label: "Absensi", href: "/mahasiswa/absensi", icon: "QrCode" },
+];
+
+const MENU_DOSEN: MenuItem[] = [
+  { label: "Dashboard", href: "/dosen", icon: "LayoutDashboard" },
+  { label: "Materi Kuliah", href: "/dosen/materi", icon: "BookOpen" },
+  { label: "Verifikasi Absensi", href: "/dosen/absensi", icon: "ClipboardCheck" },
+];
+
+const MENU_KAPRODI: MenuItem[] = [
+  { label: "Dashboard Prodi", href: "/kaprodi", icon: "LayoutDashboard" },
+  { label: "Monitoring", href: "/kaprodi/monitoring", icon: "Activity" },
+  { label: "Rekap & Laporan", href: "/kaprodi/rekap", icon: "BarChart3" },
+];
+
+const MENU_ADMIN: MenuItem[] = [
+  { label: "Dashboard", href: "/admin", icon: "LayoutDashboard" },
+  { label: "Kelola Pengguna", href: "/admin/pengguna", icon: "UsersRound" },
+  { label: "Data Akademik", href: "/admin/data", icon: "Database" },
+  { label: "Sinkronisasi", href: "/admin/sinkronisasi", icon: "RefreshCw" },
+];
+
 export const MENU: Record<Role, MenuItem[]> = {
-  mahasiswa: [
-    { label: "Dashboard", href: "/mahasiswa", icon: "LayoutDashboard" },
-    { label: "Absensi", href: "/mahasiswa/absensi", icon: "QrCode" },
-    { label: "Tugas", href: "/mahasiswa/tugas", icon: "ClipboardList" },
-    { label: "Jadwal Kuliah", href: "/mahasiswa/jadwal", icon: "CalendarDays" },
-    { label: "Nilai", href: "/mahasiswa/nilai", icon: "GraduationCap" },
-    { label: "Pengumuman", href: "/mahasiswa/pengumuman", icon: "Megaphone" },
-    { label: "Kalender Akademik", href: "/kalender-akademik", icon: "CalendarDays" },
-    { label: "KRS & Profil", href: "/mahasiswa/profil", icon: "UserRound" },
-  ],
-  dosen: [
-    { label: "Dashboard", href: "/dosen", icon: "LayoutDashboard" },
-    { label: "Kelola Absensi", href: "/dosen/absensi", icon: "QrCode" },
-    { label: "Kelola Tugas", href: "/dosen/tugas", icon: "ClipboardList" },
-    { label: "Input Nilai", href: "/dosen/nilai", icon: "PenLine" },
-    { label: "Rekap Kelas", href: "/dosen/rekap", icon: "TableProperties" },
-    { label: "Pengumuman", href: "/dosen/pengumuman", icon: "Megaphone" },
-    { label: "Jadwal Mengajar", href: "/dosen/jadwal", icon: "CalendarDays" },
-    { label: "Kalender Akademik", href: "/kalender-akademik", icon: "CalendarDays" },
-    { label: "Profil", href: "/dosen/profil", icon: "UserRound" },
-  ],
-  kaprodi: [
-    { label: "Dashboard", href: "/kaprodi", icon: "LayoutDashboard" },
-    { label: "Monitoring Kehadiran", href: "/kaprodi/kehadiran", icon: "Activity" },
-    { label: "Monitoring Dosen", href: "/kaprodi/dosen", icon: "UsersRound" },
-    { label: "Validasi Data", href: "/kaprodi/validasi", icon: "ShieldCheck" },
-    { label: "Statistik & Laporan", href: "/kaprodi/laporan", icon: "BarChart3" },
-    { label: "Manajemen", href: "/kaprodi/manajemen", icon: "Settings2" },
-    { label: "Pengumuman Prodi", href: "/kaprodi/pengumuman", icon: "Megaphone" },
-    { label: "Kalender Akademik", href: "/kalender-akademik", icon: "CalendarDays" },
-    { label: "Profil", href: "/kaprodi/profil", icon: "UserRound" },
-  ],
+  mahasiswa: MENU_MAHASISWA,
+  dosen: MENU_DOSEN,
+  kaprodi: MENU_KAPRODI,
+  admin: MENU_ADMIN,
 };
