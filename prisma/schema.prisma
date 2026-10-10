@@ -1,7 +1,7 @@
 // ============================================================
 // SIAKAD UNIVERSITAS WAHIDIYAH (Web B)
 // Portal Absensi & Kegiatan Perkuliahan
-// SQLite · 10 tabel · data master read-only dari Web A
+// PostgreSQL · 10 tabel · data master read-only dari Web A
 // ============================================================
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
